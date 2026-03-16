@@ -9,6 +9,7 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 TOKEN="${GITHUB_TOKEN:?'Erro: variável GITHUB_TOKEN não definida. Execute: export GITHUB_TOKEN=seu_token'}"
 REPO="joaopedrogc13-wq/dashboard-vendas"
 HTML="$SCRIPT_DIR/dashboard_vendas.html"
+INDEX="$SCRIPT_DIR/index.html"
 LOG="$SCRIPT_DIR/tunnel.log"
 
 echo "[$(date '+%H:%M:%S')] Iniciando API de Vendas..."
@@ -42,14 +43,15 @@ fi
 
 echo "[$(date '+%H:%M:%S')] Túnel ativo: $TUNNEL_URL"
 
-# Atualiza URL no HTML
-echo "[$(date '+%H:%M:%S')] Atualizando dashboard_vendas.html..."
+# Atualiza URL nos HTMLs
+echo "[$(date '+%H:%M:%S')] Atualizando dashboard_vendas.html e index.html..."
 sed -i '' "s|https://[a-zA-Z0-9\-]*\.trycloudflare\.com|$TUNNEL_URL|g" "$HTML"
+cp "$HTML" "$INDEX"
 
 # Commit e push para GitHub
 echo "[$(date '+%H:%M:%S')] Publicando nova URL no GitHub..."
 cd "$SCRIPT_DIR"
-git add dashboard_vendas.html
+git add dashboard_vendas.html index.html
 git commit -m "chore: atualiza URL do túnel Cloudflare ($TUNNEL_URL)" \
     --author="G4 OS <g4os@g4business.com>" 2>/dev/null || echo "(sem mudanças no git)"
 git push "https://${TOKEN}@github.com/${REPO}.git" main 2>/dev/null
@@ -66,7 +68,7 @@ echo ""
 echo "✅ Tudo pronto!"
 echo "   API local  : http://localhost:8742"
 echo "   Túnel       : $TUNNEL_URL"
-echo "   Dashboard   : https://joaopedrogc13-wq.github.io/dashboard-vendas/dashboard_vendas.html"
+echo "   Dashboard   : https://joaopedrogc13-wq.github.io/dashboard-vendas/"
 echo ""
 echo "   PIDs: API=$API_PID  Túnel=$CF_PID"
 echo "   Para parar: pkill -f api_vendas.py && pkill -f 'cloudflared tunnel'"

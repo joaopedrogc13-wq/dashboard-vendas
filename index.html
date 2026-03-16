@@ -1,0 +1,1265 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Dashboard de Vendas — Cabral &amp; Sousa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<style>
+:root{
+  --bg:#f9fafb; --bg2:#ffffff; --card:#ffffff; --card2:#f4f4f6;
+  --border:#e5e7eb; --border2:#d1d5db;
+  --red:#ff0000; --red-d:#cc0000; --red-l:#ff2525;
+  --red-glow:rgba(255,0,0,.10);
+  --text:#1d2939; --muted:#6b7280; --dim:#c4c4cc;
+  --green:#16a34a; --yellow:#d97706; --blue:#2563eb; --purple:#7c3aed;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font-family:'Roboto',system-ui,sans-serif;font-size:13px}
+
+/* ── HEADER ── */
+.hdr{
+  background:#ffffff;
+  border-bottom:3px solid var(--red);
+  height:62px;padding:0 24px;
+  display:flex;align-items:center;justify-content:space-between;
+  position:sticky;top:0;z-index:200;
+  box-shadow:0 2px 10px rgba(0,0,0,.08);
+}
+.hdr-logo{display:flex;align-items:center;gap:16px}
+.hdr-logo img{height:38px;width:auto;display:block}
+.hdr-divider{width:1px;height:30px;background:var(--border2)}
+.hdr-title{font-size:13px;font-weight:700;color:var(--text);line-height:1.2}
+.hdr-sub{font-size:11px;color:var(--muted)}
+.hdr-right{display:flex;align-items:center;gap:10px}
+.pill-live{background:rgba(255,0,0,.08);color:var(--red);border:1px solid rgba(255,0,0,.25);padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700}
+#ts{font-size:11px;color:var(--muted)}
+#refreshIco{display:inline-block;transition:transform .2s}
+.btn{background:#fff;border:1px solid var(--border2);color:var(--text);padding:6px 14px;border-radius:6px;cursor:pointer;font-size:12px;transition:.15s;font-weight:500}
+.btn:hover{border-color:var(--red);color:var(--red)}
+.btn-sm{padding:4px 10px;font-size:11px}
+.btn-red{background:var(--red);border-color:var(--red-d);color:#fff}
+.btn-red:hover{background:var(--red-l)}
+
+/* ── TOOLBAR ── */
+.toolbar{
+  background:#ffffff;border-bottom:1px solid var(--border);
+  padding:8px 22px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;
+  box-shadow:0 1px 4px rgba(0,0,0,.06);
+}
+.toolbar label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+select.sel{background:#fff;border:1px solid var(--border2);color:var(--text);padding:5px 10px;border-radius:6px;font-size:12px;outline:none;cursor:pointer}
+select.sel:focus{border-color:var(--red)}
+.tsep{width:1px;height:22px;background:var(--border2)}
+
+/* ── TABS ── */
+.tabs{background:#ffffff;border-bottom:2px solid var(--border);padding:0 20px;display:flex;overflow-x:auto}
+.tab{padding:11px 20px;cursor:pointer;color:var(--muted);font-size:12px;font-weight:500;border-bottom:2px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:.15s}
+.tab:hover{color:var(--text)}
+.tab.active{color:var(--red);border-bottom-color:var(--red);font-weight:700}
+
+/* ── MAIN ── */
+.main{padding:16px 22px}
+.panel{display:none}
+.panel.active{display:block}
+
+/* ── KPI STRIP ── */
+.kpi-row{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 15px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--ka,var(--red))}
+.kpi-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);margin-bottom:5px}
+.kpi-val{font-size:20px;font-weight:800;line-height:1;color:var(--kc,var(--text))}
+.kpi-sub{font-size:10px;color:var(--muted);margin-top:3px}
+
+/* ── GRIDS ── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.g31{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+
+/* ── CARD ── */
+.card{background:var(--card);border:1px solid var(--border);border-radius:10px;padding:15px}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.card-title{font-size:11px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.05em}
+.card-actions{display:flex;gap:5px}
+.chip{font-size:10px;padding:3px 8px;border-radius:4px;background:#f0f0f2;border:1px solid var(--border2);color:var(--muted);cursor:pointer;transition:.15s}
+.chip:hover,.chip.on{background:var(--red);border-color:var(--red-d);color:#fff}
+
+/* ── CHART BOX ── */
+.ch{position:relative;height:220px}
+.ch-lg{position:relative;height:290px}
+.ch-sm{position:relative;height:170px}
+
+/* ── TABLE ── */
+.tbl-wrap{overflow-x:auto;max-height:500px;overflow-y:auto}
+.tbl-wrap.noh{max-height:none}
+table{width:100%;border-collapse:collapse}
+th{position:sticky;top:0;z-index:1;background:var(--card);color:var(--muted);font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;padding:8px 10px;text-align:right;border-bottom:2px solid var(--border);white-space:nowrap}
+th.L,td.L{text-align:left!important}
+td{padding:7px 10px;border-bottom:1px solid var(--border);font-size:12px;text-align:right;white-space:nowrap;color:var(--text)}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(200,16,46,.04)}
+.tn{font-variant-numeric:tabular-nums}
+
+/* ── DRILL INLINE ── */
+/*
+  Drilldown inline: cada nível expande DENTRO da tabela como um sub-painel
+  colapsável, identificado por data-level: equipe → gerente → supervisor → rca → fornecedor
+*/
+.drill-btn{
+  display:inline-flex;align-items:center;gap:4px;
+  color:var(--red);cursor:pointer;padding:2px 7px;border-radius:4px;
+  border:1px solid rgba(200,16,46,.3);background:rgba(200,16,46,.05);font-size:11px;
+  transition:.15s;font-weight:600;
+}
+.drill-btn:hover{border-color:var(--red);background:rgba(200,16,46,.1)}
+.drill-btn.open{background:var(--red);border-color:var(--red-d);color:#fff}
+.drill-btn .ico{font-size:9px;transition:transform .2s}
+.drill-btn.open .ico{transform:rotate(90deg)}
+
+/* SUB-PANEL que aparece dentro da table como uma linha especial */
+.sub-row td{padding:0!important;border-bottom:2px solid var(--red)!important}
+.sub-panel{
+  background:#fafafa;border-left:3px solid var(--red);
+  padding:12px 16px;
+}
+.sub-panel-hd{
+  display:flex;align-items:center;gap:8px;margin-bottom:10px;
+  font-size:12px;font-weight:700;color:var(--text);
+}
+.sub-panel-hd .close-sub{margin-left:auto;cursor:pointer;color:var(--muted);font-size:14px}
+.sub-panel-hd .close-sub:hover{color:var(--red)}
+.sub-kpis{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.sub-kpi{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px 14px;min-width:140px}
+.sub-kpi-lbl{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-bottom:3px}
+.sub-kpi-val{font-size:16px;font-weight:800}
+
+/* ── BREADCRUMB ── */
+.bc{display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;flex-wrap:wrap}
+.bc-item{color:var(--muted)}
+.bc-link{color:var(--red);cursor:pointer}
+.bc-link:hover{color:var(--red-l);text-decoration:underline}
+.bc-active{color:var(--text);font-weight:600}
+.bc-sep{color:var(--dim)}
+
+/* ── EQUIPE BADGES ── */
+.badge{display:inline-flex;align-items:center;padding:2px 7px;border-radius:4px;font-size:11px;font-weight:700}
+.bg{background:rgba(34,197,94,.12);color:#22c55e}
+.br{background:rgba(200,16,46,.15);color:#e8193e}
+.by{background:rgba(245,158,11,.12);color:#f59e0b}
+.eq-Mondelez{background:rgba(79,142,247,.15);color:#4f8ef7}
+.eq-Distribuição{background:rgba(168,85,247,.15);color:#a855f7}
+.eq-Atacado{background:rgba(245,158,11,.15);color:#f59e0b}
+.eq-Bahia-Forte{background:rgba(34,197,94,.15);color:#22c55e}
+.eq-CMA{background:rgba(200,16,46,.2);color:#e8193e}
+
+/* ── PROGRESS ── */
+.pg{display:flex;align-items:center;gap:5px}
+.pg-track{flex:1;height:5px;background:var(--border2);border-radius:3px;overflow:hidden;min-width:44px}
+.pg-fill{height:100%;border-radius:3px}
+.pg-lbl{font-size:11px;font-weight:700;min-width:38px;text-align:right}
+
+/* ── FORNECEDOR PANEL ── */
+.forn-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.forn-detail{background:#fafafa;border:1px solid var(--border);border-radius:10px;padding:14px;min-height:200px}
+.forn-detail-hd{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;border-bottom:1px solid var(--border);padding-bottom:8px}
+.forn-row{display:flex;align-items:center;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--border);cursor:pointer;gap:8px}
+.forn-row:last-child{border-bottom:none}
+.forn-row:hover{color:var(--red-l)}
+.forn-row.sel{background:rgba(200,16,46,.08);margin:0 -6px;padding:6px 6px;border-radius:4px}
+.forn-nome{font-size:12px;font-weight:500;flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.forn-val{font-size:12px;font-variant-numeric:tabular-nums;color:var(--muted);white-space:nowrap}
+.forn-bar-wrap{height:4px;background:var(--border2);border-radius:2px;margin-top:3px}
+.forn-bar{height:100%;border-radius:2px;background:var(--red);transition:width .4s}
+
+/* ── LOADING/ERR ── */
+.ldg{text-align:center;padding:30px;color:var(--muted);font-size:12px}
+.spin{display:inline-block;width:16px;height:16px;border:2px solid var(--border2);border-top-color:var(--red);border-radius:50%;animation:sp .7s linear infinite;vertical-align:middle;margin-right:6px}
+@keyframes sp{to{transform:rotate(360deg)}}
+.emsg{color:var(--red);text-align:center;padding:14px;font-size:12px}
+
+/* ── SEARCH ── */
+.srch{background:#fff;border:1px solid var(--border2);color:var(--text);padding:6px 12px;border-radius:6px;font-size:12px;outline:none}
+.srch:focus{border-color:var(--red);box-shadow:0 0 0 3px rgba(200,16,46,.1)}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:#f0f0f2}
+::-webkit-scrollbar-thumb{background:#c4c4cc;border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--red)}
+
+@media(max-width:1100px){
+  .kpi-row{grid-template-columns:repeat(3,1fr)}
+  .g2,.g31,.g3,.forn-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-logo">
+    <img src="https://cabralesousa.com.br/wp-content/uploads/2026/02/horizontal-png-elementor-io-optimized-scaled-1.webp" alt="Cabral &amp; Sousa">
+    <div class="hdr-divider"></div>
+    <div>
+      <div class="hdr-title">Dashboard de Vendas</div>
+      <div class="hdr-sub">Painel Gerencial · 2026</div>
+    </div>
+  </div>
+  <div class="hdr-right">
+    <span class="pill-live">● AO VIVO</span>
+    <span id="ts">—</span>
+    <button id="btnRefresh" class="btn btn-red" onclick="reloadAll()"><span id="refreshIco">↻</span> Atualizar</button>
+  </div>
+</div>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <label>Período:</label>
+  <select class="sel" id="selI" onchange="onPeriod()"><option value="">Mês atual</option></select>
+  <span style="color:var(--dim);font-size:11px">até</span>
+  <select class="sel" id="selF" onchange="onPeriod()"><option value="">—</option></select>
+  <div class="tsep"></div>
+  <button class="btn btn-sm" onclick="setPer('2026-01','2026-01')">Jan</button>
+  <button class="btn btn-sm" onclick="setPer('2026-02','2026-02')">Fev</button>
+  <button class="btn btn-sm" onclick="setPer('2026-03','2026-03')">Mar</button>
+  <button class="btn btn-sm" onclick="setPer('2026-04','2026-04')">Abr</button>
+  <button class="btn btn-sm" onclick="setPer('2026-05','2026-05')">Mai</button>
+  <button class="btn btn-sm" onclick="setPer('2026-06','2026-06')">Jun</button>
+  <button class="btn btn-sm" onclick="setPer('2026-07','2026-07')">Jul</button>
+  <button class="btn btn-sm" onclick="setPer('2026-08','2026-08')">Ago</button>
+  <button class="btn btn-sm" onclick="setPer('2026-09','2026-09')">Set</button>
+  <button class="btn btn-sm" onclick="setPer('2026-10','2026-10')">Out</button>
+  <button class="btn btn-sm" onclick="setPer('2026-11','2026-11')">Nov</button>
+  <button class="btn btn-sm" onclick="setPer('2026-12','2026-12')">Dez</button>
+  <div class="tsep"></div>
+  <button class="btn btn-sm" onclick="setPer('2026-01','2026-03')">T1</button>
+  <button class="btn btn-sm" onclick="setPer('2026-04','2026-06')">T2</button>
+  <button class="btn btn-sm" onclick="setPer('2026-07','2026-09')">T3</button>
+  <button class="btn btn-sm" onclick="setPer('2026-10','2026-12')">T4</button>
+  <button class="btn btn-sm" onclick="setPer('2026-01','2026-12')">Ano</button>
+  <button class="btn btn-sm" onclick="setPer('','')">Atual</button>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab active" data-p="visao">📊 Visão Geral</div>
+  <div class="tab" data-p="equipes">🏢 Equipes &amp; Drilldown</div>
+  <div class="tab" data-p="fornecedores">📦 Fornecedores</div>
+</div>
+
+<div class="main">
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 1 — VISÃO GERAL
+══════════════════════════════════════════════════════════ -->
+<div class="panel active" id="p-visao">
+
+  <!-- KPIs -->
+  <div class="kpi-row" id="kpiRow">
+    <div class="ldg" style="grid-column:1/-1"><span class="spin"></span>Carregando...</div>
+  </div>
+
+  <!-- Gráfico Vendas vs Meta vs Margem mês a mês -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-hd">
+      <span class="card-title">Vendas · Meta · Margem — 2026 mês a mês</span>
+    </div>
+    <div style="height:240px"><canvas id="cEvolTriple"></canvas></div>
+  </div>
+
+  <!-- Evolução linha + Equipe Donut -->
+  <div class="g31">
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">Evolução 2026 — Vendas &amp; Margem</span>
+        <div class="card-actions">
+          <span class="chip on" onclick="evolSort('vendas',this)">Vendas</span>
+          <span class="chip" onclick="evolSort('margem',this)">Margem</span>
+        </div>
+      </div>
+      <div class="ch-lg"><canvas id="cEvol"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><span class="card-title">Mix por Equipe</span></div>
+      <div class="ch-lg"><canvas id="cEquipePie"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Top Fornecedores + Top RCAs -->
+  <div class="g2">
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">Top 10 Fornecedores</span>
+        <div class="card-actions">
+          <span class="chip on" onclick="fornSort('venda',this)">Venda</span>
+          <span class="chip" onclick="fornSort('margem',this)">Margem</span>
+        </div>
+      </div>
+      <div class="ch"><canvas id="cFornTop"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">Top 10 RCAs</span>
+        <div class="card-actions">
+          <span class="chip on" onclick="rcaSort('venda',this)">Venda</span>
+          <span class="chip" onclick="rcaSort('margem',this)">Margem</span>
+        </div>
+      </div>
+      <div class="ch"><canvas id="cRcaTop"></canvas></div>
+    </div>
+  </div>
+
+  <!-- Resumo por Fornecedor + Resumo por Gerente/Operação -->
+  <div class="g2" style="margin-top:0">
+    <!-- Resumo Fornecedores -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">Resumo por Fornecedor</span>
+        <div class="card-actions">
+          <span class="chip on" onclick="fornSummSort('venda',this)">Venda</span>
+          <span class="chip" onclick="fornSummSort('margem',this)">Margem</span>
+          <input class="srch" id="srchFornSumm" placeholder="Buscar..." oninput="filterFornSumm()" style="width:110px">
+        </div>
+      </div>
+      <div class="tbl-wrap" style="max-height:300px">
+        <table id="tblFornSumm">
+          <thead><tr>
+            <th class="L">#</th>
+            <th class="L">Fornecedor</th>
+            <th>Vendas</th>
+            <th>Margem R$</th>
+            <th>% Mg</th>
+            <th>RCAs</th>
+          </tr></thead>
+          <tbody id="bFornSumm"><tr><td colspan="6" class="ldg"><span class="spin"></span></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Resumo por Gerente / Operação -->
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title">Resumo por Gerente / Operação</span>
+        <button class="btn btn-sm" onclick="goTab('equipes')">Drilldown completo →</button>
+      </div>
+      <div class="tbl-wrap" style="max-height:300px">
+        <table id="tblGerSumm">
+          <thead><tr>
+            <th class="L">#</th><th class="L">Gerente</th><th class="L">Equipe</th>
+            <th>Vendas</th><th>Meta</th><th>% Meta</th><th>% Margem</th><th>RCAs</th>
+          </tr></thead>
+          <tbody id="bGerSumm"><tr><td colspan="8" class="ldg"><span class="spin"></span></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div><!-- /p-visao -->
+
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 2 — EQUIPES & DRILLDOWN
+     Hierarquia: Equipe → Gerente → Supervisor → RCA → Fornecedores do RCA
+══════════════════════════════════════════════════════════ -->
+<div class="panel" id="p-equipes">
+
+  <!-- Breadcrumb dinâmico -->
+  <div class="bc" id="bcEquipes"></div>
+
+  <!-- Nível 1: Equipes -->
+  <div id="lvl-equipe">
+    <div class="card">
+      <div class="card-hd">
+        <span class="card-title" id="lvlTitle">Equipes</span>
+        <div class="card-actions">
+          <input class="srch" id="srchEq" placeholder="Buscar..." oninput="filterLevel()" style="width:160px">
+        </div>
+      </div>
+      <div class="tbl-wrap noh">
+        <table id="tblDrill">
+          <thead id="tblDrillHead"></thead>
+          <tbody id="tblDrillBody">
+            <tr><td colspan="10" class="ldg"><span class="spin"></span>Carregando...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sub-painel de drilldown (aparece abaixo da tabela quando expandido) -->
+  <div id="drillPanel" style="display:none;margin-top:14px"></div>
+
+</div><!-- /p-equipes -->
+
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB 3 — FORNECEDORES (melhorado)
+══════════════════════════════════════════════════════════ -->
+<div class="panel" id="p-fornecedores">
+
+  <!-- KPIs de fornecedores -->
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px" id="fornKpis">
+    <div class="ldg" style="grid-column:1/-1"><span class="spin"></span></div>
+  </div>
+
+  <!-- Filtro por equipe -->
+  <div style="display:flex;gap:6px;margin-bottom:12px;flex-wrap:wrap" id="eqFiltForn">
+    <button class="btn btn-sm on" data-eq="" onclick="setFornEq('',this)">Todas as Equipes</button>
+    <button class="btn btn-sm" data-eq="Mondelez" onclick="setFornEq('Mondelez',this)">Mondelez</button>
+    <button class="btn btn-sm" data-eq="Bahia Forte" onclick="setFornEq('Bahia Forte',this)">Bahia Forte</button>
+    <button class="btn btn-sm" data-eq="CMA" onclick="setFornEq('CMA',this)">CMA</button>
+    <button class="btn btn-sm" data-eq="Atacado" onclick="setFornEq('Atacado',this)">Atacado</button>
+    <button class="btn btn-sm" data-eq="Distribuição" onclick="setFornEq('Distribuição',this)">Distribuição</button>
+  </div>
+
+  <div class="forn-grid">
+    <!-- Lista de fornecedores -->
+    <div class="card" style="max-height:calc(100vh - 320px);overflow:hidden;display:flex;flex-direction:column">
+      <div class="card-hd" style="flex-shrink:0">
+        <span class="card-title" id="fornListTitle">Ranking de Fornecedores</span>
+        <input class="srch" id="srchForn" placeholder="Buscar..." oninput="filterForn()" style="width:150px">
+      </div>
+      <!-- Bar chart mini -->
+      <div class="ch-sm" style="flex-shrink:0;margin-bottom:10px"><canvas id="cFornBar"></canvas></div>
+      <!-- Lista scrollável -->
+      <div style="overflow-y:auto;flex:1" id="fornList">
+        <div class="ldg"><span class="spin"></span></div>
+      </div>
+    </div>
+
+    <!-- Detalhe do fornecedor selecionado -->
+    <div id="fornDetail">
+      <div class="forn-detail" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;height:100%">
+        ← Selecione um fornecedor para ver o detalhamento por equipe e RCA
+      </div>
+    </div>
+  </div>
+</div><!-- /p-fornecedores -->
+
+</div><!-- /main -->
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   CONFIG & STATE
+═══════════════════════════════════════════════════════ */
+const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:')
+  ? 'http://localhost:8742'
+  : 'https://mia-cover-write-bookmark.trycloudflare.com';
+let _charts = {};
+let _cache  = {};
+// Drill state: stack de níveis
+// level: 'equipe' | 'gerente' | 'supervisor' | 'rca'
+let _drill = { level: 'equipe', stack: [], filter: {} };
+let _allForn = [];
+let _fornEq  = '';
+let _evolData = [];
+let _rcaFullData = [];
+let _fornFullData = [];
+
+/* ═══ UTILS ═══════════════════════════════════════════ */
+const R$ = v => {
+  const n = parseFloat(v)||0, a = Math.abs(n);
+  const s = a>=1e6 ? (a/1e6).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})+'M'
+          : a>=1e3 ? (a/1e3).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'K'
+          : a.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return (n<0?'-':'')+'R$\u00a0'+s;
+};
+const R$full = v => {
+  const n = parseFloat(v)||0;
+  return (n<0?'- ':'')+'R$ '+Math.abs(n).toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+};
+const $N = v => (parseFloat(v)||0).toLocaleString('pt-BR');
+const pct = v => { const n=parseFloat(v)||0; return (n>=0?'+':'')+n.toFixed(2).replace('.',',')+'%'; };
+const cv  = v => parseFloat(v)>=0 ? 'var(--green)' : 'var(--red)';
+const bdg = v => `<span class="badge ${parseFloat(v)>=0?'bg':'br'}">${pct(v)}</span>`;
+const eqCls = eq => 'eq-'+(eq||'').replace(/\s+/g,'-').replace(/[^a-zA-Z0-9\-]/g,'');
+const eqBdg = eq => `<span class="badge ${eqCls(eq)}" style="font-size:10px">${eq||'—'}</span>`;
+
+function prog(perc) {
+  const raw = parseFloat(perc)||0;
+  const p = Math.min(raw, 100);
+  const c = raw<=100?'var(--green)':raw<=130?'var(--yellow)':'var(--red)';
+  return `<div class="pg"><div class="pg-track"><div class="pg-fill" style="width:${p}%;background:${c}"></div></div><span class="pg-lbl" style="color:${c}">${raw.toFixed(1)}%</span></div>`;
+}
+function ldg(n=10){return `<tr><td colspan="${n}" class="ldg"><span class="spin"></span>Carregando...</td></tr>`}
+function emsg(e,n=10){return `<tr><td colspan="${n}" class="emsg">⚠ ${e}</td></tr>`}
+
+/* ═══ PERIOD ═══════════════════════════════════════════ */
+function pqs() {
+  const i=document.getElementById('selI').value, f=document.getElementById('selF').value;
+  let q=''; if(i) q+=`&mes_inicio=${i}`; if(f) q+=`&mes_fim=${f}`; return q;
+}
+function setPer(i,f){ document.getElementById('selI').value=i; document.getElementById('selF').value=f; onPeriod(); }
+function onPeriod(){ _cache={}; reloadAll(); }
+
+async function loadMeses() {
+  try {
+    const ms = await fetchJ(`${API}/api/meses`);
+    const meses = ms.map(d=>d.MES);
+    ['selI','selF'].forEach((id,idx)=>{
+      const el = document.getElementById(id);
+      const cur = el.value;
+      el.innerHTML = (idx===0?'<option value="">Mês atual</option>':'<option value="">—</option>')
+        + meses.map(m=>`<option value="${m}">${fmtMes(m)}</option>`).join('');
+      if(cur && meses.includes(cur)) el.value=cur;
+    });
+  } catch(e){}
+}
+function fmtMes(m) {
+  const [y,mo] = m.split('-');
+  const nomes = ['Jan','Fev','Mar','Abr','Mai','Jun','Jul','Ago','Set','Out','Nov','Dez'];
+  return nomes[parseInt(mo)-1]+' '+y;
+}
+
+/* ═══ FETCH & CACHE ════════════════════════════════════ */
+async function fetchJ(url) {
+  const r = await fetch(url);
+  const txt = await r.text();
+  // Cloudflare quick tunnel mostra aviso HTML antes de liberar o acesso
+  if (txt.includes('cloudflare') && txt.includes('<html')) {
+    throw new Error('Acesso bloqueado pelo Cloudflare — abra ' + new URL(url).origin + ' no browser e aceite os termos');
+  }
+  let j;
+  try { j = JSON.parse(txt); } catch(e) { throw new Error('Resposta inválida da API'); }
+  if (!r.ok) throw new Error(j.error||r.statusText);
+  return j;
+}
+async function load(ep, extra='') {
+  const qs = pqs();
+  const url = `${API}${ep}?_=1${qs}${extra}`;
+  if (_cache[url]) return _cache[url];
+  const d = await fetchJ(url);
+  _cache[url] = d;
+  return d;
+}
+
+/* ═══ CHARTS ═══════════════════════════════════════════ */
+function kill(id){ if(_charts[id]){_charts[id].destroy();delete _charts[id];} }
+const axOpts = {
+  ticks:{color:'#6b7280',font:{size:10}},
+  grid:{color:'rgba(0,0,0,.06)'},
+};
+const baseOpts = {responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{labels:{color:'#374151',boxWidth:10,font:{size:11}}}}};
+
+function lineChart(id, labels, ds) {
+  kill(id);
+  _charts[id] = new Chart(document.getElementById(id), {type:'line', data:{labels,datasets:ds},
+    options:{...baseOpts, scales:{
+      x:{...axOpts},
+      y:{...axOpts, ticks:{...axOpts.ticks, callback:v=>'R$'+Intl.NumberFormat('pt-BR',{notation:'compact'}).format(v)}}
+    }}
+  });
+}
+function hbar(id, labels, data, colors, valuePrefix='R$') {
+  kill(id);
+  _charts[id] = new Chart(document.getElementById(id), {
+    type:'bar', data:{labels, datasets:[{data, backgroundColor:colors, borderRadius:4}]},
+    options:{...baseOpts, indexAxis:'y', plugins:{legend:{display:false}},
+      scales:{
+        x:{...axOpts, ticks:{...axOpts.ticks, callback:v=>valuePrefix+Intl.NumberFormat('pt-BR',{notation:'compact'}).format(v)}},
+        y:{...axOpts}
+      }
+    }
+  });
+}
+function donut(id, labels, data, colors) {
+  kill(id);
+  _charts[id] = new Chart(document.getElementById(id), {
+    type:'doughnut', data:{labels, datasets:[{data, backgroundColor:colors, borderWidth:0, hoverOffset:8}]},
+    options:{...baseOpts, plugins:{legend:{position:'right',labels:{color:'#888',font:{size:11},boxWidth:12}}}}
+  });
+}
+
+/* ═══ TABS ═══════════════════════════════════════════ */
+document.querySelector('.tabs').addEventListener('click', e=>{
+  const t = e.target.closest('.tab'); if(!t) return;
+  document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));
+  t.classList.add('active');
+  const p = t.dataset.p;
+  document.querySelectorAll('.panel').forEach(x=>x.classList.remove('active'));
+  document.getElementById('p-'+p).classList.add('active');
+  if(p==='fornecedores') loadFornPanel();
+});
+function goTab(p){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.p===p));
+  document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id==='p-'+p));
+}
+
+/* ═══════════════════════════════════════════════════════
+   TAB 1: VISÃO GERAL
+═══════════════════════════════════════════════════════ */
+
+/* KPIs */
+async function loadKPIs() {
+  try {
+    const [d] = await load('/api/resumo');
+    const m = parseFloat(d.MARGEM)||0, pm = parseFloat(d.PERC_MARGEM)||0;
+    const ticket = (parseFloat(d.VLTOTAL)||0)/(parseFloat(d.PEDIDOS)||1);
+    const meta = parseFloat(d.META)||0, percMeta = parseFloat(d.PERC_META)||0;
+    const metaColor = percMeta<=100?'var(--green)':percMeta<=130?'var(--yellow)':'var(--red)';
+    document.getElementById('kpiRow').innerHTML = `
+      <div class="kpi" style="--ka:var(--red)"><div class="kpi-lbl">Faturamento</div><div class="kpi-val">${R$(d.VLTOTAL)}</div><div class="kpi-sub">Vendas brutas</div></div>
+      <div class="kpi" style="--ka:${metaColor};--kc:${metaColor}"><div class="kpi-lbl">Meta do Período</div><div class="kpi-val">${R$(meta)}</div><div class="kpi-sub">${prog(percMeta)}</div></div>
+      <div class="kpi" style="--ka:${m>=0?'var(--green)':'var(--red)'};--kc:${m>=0?'var(--green)':'var(--red)'}"><div class="kpi-lbl">Margem Bruta</div><div class="kpi-val">${R$(m)}</div><div class="kpi-sub">${pm.toFixed(2).replace('.',',')}% sobre vendas</div></div>
+      <div class="kpi" style="--ka:var(--yellow);--kc:var(--yellow)"><div class="kpi-lbl">CMV</div><div class="kpi-val">${R$(d.VLCUSTO)}</div><div class="kpi-sub">Custo mercadoria</div></div>
+      <div class="kpi" style="--ka:var(--purple);--kc:var(--purple)"><div class="kpi-lbl">Pedidos</div><div class="kpi-val">${$N(d.PEDIDOS)}</div><div class="kpi-sub">No período</div></div>
+      <div class="kpi" style="--ka:var(--blue);--kc:var(--blue)"><div class="kpi-lbl">RCAs Ativos</div><div class="kpi-val">${$N(d.RCAS_ATIVOS)}</div><div class="kpi-sub">Com vendas</div></div>`;
+  } catch(e){ document.getElementById('kpiRow').innerHTML=`<div class="emsg" style="grid-column:1/-1">⚠ ${e.message}</div>`; }
+}
+
+/* Evolução */
+let _evolMode = 'vendas';
+async function loadEvolucao() {
+  try {
+    _evolData = await load('/api/evolucao');
+    renderEvol();
+    renderEvolTriple();
+  } catch(e){}
+}
+function renderEvol() {
+  const d = _evolData;
+  if(!d||!d.length) return;
+  const ds = [
+    {label:'Vendas', data:d.map(x=>+x.VLTOTAL||0), borderColor:'#c8102e', backgroundColor:'rgba(200,16,46,.07)', fill:true, tension:.35, pointRadius:4, pointBackgroundColor:'#c8102e'},
+    {label:'Meta',   data:d.map(x=>+x.META||0),     borderColor:'#f59e0b', backgroundColor:'transparent', borderDash:[5,4], tension:.35, pointRadius:3, pointBackgroundColor:'#f59e0b'},
+    {label:'Margem', data:d.map(x=>+x.MARGEM||0),   borderColor:'#22c55e', backgroundColor:'rgba(34,197,94,.05)', fill:true, tension:.35, pointRadius:4, pointBackgroundColor:'#22c55e'},
+  ];
+  lineChart('cEvol', d.map(x=>fmtMes(x.MES)), ds);
+}
+function evolSort(m, el){ document.querySelectorAll('#p-visao .card:first-child .chip').forEach(x=>x.classList.remove('on')); el.classList.add('on'); _evolMode=m; renderEvol(); }
+
+/* Gráfico Vendas vs Meta vs Margem — barras agrupadas */
+function renderEvolTriple() {
+  const d = _evolData;
+  if(!d||!d.length) return;
+  kill('cEvolTriple');
+  const labels = d.map(x=>fmtMes(x.MES));
+  const fmt = v => 'R$'+Intl.NumberFormat('pt-BR',{notation:'compact',maximumFractionDigits:1}).format(v);
+  _charts['cEvolTriple'] = new Chart(document.getElementById('cEvolTriple'), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'Vendas',
+          data: d.map(x=>+x.VLTOTAL||0),
+          backgroundColor: 'rgba(200,16,46,.75)',
+          borderRadius: 4,
+          order: 2,
+        },
+        {
+          label: 'Margem',
+          data: d.map(x=>+x.MARGEM||0),
+          backgroundColor: 'rgba(34,197,94,.75)',
+          borderRadius: 4,
+          order: 2,
+        },
+        {
+          label: 'Meta',
+          data: d.map(x=>+x.META||0),
+          type: 'line',
+          borderColor: '#f59e0b',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [6,4],
+          pointRadius: 5,
+          pointBackgroundColor: '#f59e0b',
+          tension: .3,
+          order: 1,
+          yAxisID: 'y',
+        }
+      ]
+    },
+    options: {
+      ...baseOpts,
+      scales: {
+        x: {...axOpts},
+        y: {
+          ...axOpts,
+          ticks: {...axOpts.ticks, callback: v=>fmt(v)}
+        }
+      },
+      plugins: {
+        ...baseOpts.plugins,
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}`
+          }
+        }
+      }
+    }
+  });
+}
+
+/* Equipe donut */
+const EQ_COL = {'Mondelez':'rgba(79,142,247,.85)','Distribuição':'rgba(168,85,247,.85)','Atacado':'rgba(245,158,11,.85)','Bahia Forte':'rgba(34,197,94,.85)','CMA':'rgba(200,16,46,.85)'};
+async function loadEquipePie() {
+  try {
+    const d = await load('/api/por-equipe');
+    donut('cEquipePie', d.map(x=>x.EQUIPE), d.map(x=>+x.VLTOTAL||0), d.map(x=>EQ_COL[x.EQUIPE]||'#555'));
+  } catch(e){}
+}
+
+/* Top fornecedores chart */
+let _fornMode='venda';
+async function loadFornTop() {
+  try {
+    _fornFullData = await load('/api/fornec-por-equipe');
+    renderFornTop();
+  } catch(e){}
+}
+function renderFornTop() {
+  const top = [..._fornFullData].sort((a,b)=>(_fornMode==='venda'?+b.VLTOTAL-+a.VLTOTAL:+b.MARGEM-+a.MARGEM)).slice(0,10);
+  hbar('cFornTop', top.map(d=>d.FORNECEDOR.split(' ').slice(0,3).join(' ')), top.map(d=>_fornMode==='venda'?+d.VLTOTAL:+d.MARGEM), Array(10).fill('rgba(200,16,46,.65)'));
+}
+function fornSort(m,el){ document.querySelectorAll('#p-visao .card:nth-child(1) .chip').forEach(x=>x.classList.remove('on')); el.classList.add('on'); _fornMode=m; renderFornTop(); }
+
+/* Top RCA chart */
+let _rcaMode='venda';
+async function loadRcaTop() {
+  try {
+    _rcaFullData = await load('/api/por-rca');
+    renderRcaTop();
+  } catch(e){}
+}
+function renderRcaTop() {
+  const top = [..._rcaFullData].sort((a,b)=>(_rcaMode==='venda'?+b.VLTOTAL-+a.VLTOTAL:+b.MARGEM-+a.MARGEM)).slice(0,10);
+  hbar('cRcaTop', top.map(d=>d.RCA.split(' ')[0]+' '+d.RCA.split(' ').slice(-1)[0]), top.map(d=>_rcaMode==='venda'?+d.VLTOTAL:+d.MARGEM), Array(10).fill('rgba(200,16,46,.5)'));
+}
+function rcaSort(m,el){ document.querySelectorAll('#p-visao .card:nth-child(2) .chip').forEach(x=>x.classList.remove('on')); el.classList.add('on'); _rcaMode=m; renderRcaTop(); }
+
+/* Ranking gerentes resumo */
+async function loadGerSumm() {
+  try {
+    const d = (await load('/api/por-gerente')).filter(r=>r.GERENTE!=='Sem Gerente');
+    document.getElementById('bGerSumm').innerHTML = d.map((r,i)=>`
+      <tr>
+        <td class="L tn" style="color:var(--muted)">${i+1}</td>
+        <td class="L"><strong>${r.GERENTE}</strong></td>
+        <td class="L">${eqBdg(r.EQUIPE)}</td>
+        <td class="tn">${R$(r.VLTOTAL)}</td>
+        <td class="tn" style="color:var(--muted)">${+r.META>0?R$(r.META):'—'}</td>
+        <td>${+r.META>0?prog(r.PERC_META):'—'}</td>
+        <td>${bdg(r.PERC_MARGEM)}</td>
+        <td class="tn">${$N(r.RCAS)}</td>
+      </tr>`).join('');
+  } catch(e){ document.getElementById('bGerSumm').innerHTML=emsg(e.message,8); }
+}
+
+/* Resumo por Fornecedor */
+let _fornSummData = [];
+let _fornSummMode = 'venda';
+async function loadFornSumm() {
+  try {
+    _fornSummData = await load('/api/fornec-por-equipe');
+    renderFornSumm();
+  } catch(e){ document.getElementById('bFornSumm').innerHTML=emsg(e.message,6); }
+}
+function renderFornSumm() {
+  const sorted = [..._fornSummData];
+  // Agrupa por fornecedor (pode vir por equipe)
+  const map = {};
+  sorted.forEach(r => {
+    const k = r.CODFORNEC;
+    if(!map[k]) map[k] = {FORNECEDOR: r.FORNECEDOR, VLTOTAL:0, MARGEM:0, RCAS:0};
+    map[k].VLTOTAL += +r.VLTOTAL||0;
+    map[k].MARGEM  += +r.MARGEM||0;
+    map[k].RCAS    += +r.RCAS||0;
+  });
+  let rows = Object.values(map);
+  rows = rows.sort((a,b)=>_fornSummMode==='venda'?b.VLTOTAL-a.VLTOTAL:b.MARGEM-a.MARGEM);
+  const q = (document.getElementById('srchFornSumm')||{}).value||'';
+  if(q) rows = rows.filter(r=>r.FORNECEDOR.toLowerCase().includes(q.toLowerCase()));
+  document.getElementById('bFornSumm').innerHTML = rows.slice(0,30).map((r,i)=>`
+    <tr>
+      <td class="L tn" style="color:var(--muted)">${i+1}</td>
+      <td class="L" style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${r.FORNECEDOR}"><strong>${r.FORNECEDOR}</strong></td>
+      <td class="tn">${R$(r.VLTOTAL)}</td>
+      <td class="tn" style="color:var(--green)">${R$(r.MARGEM)}</td>
+      <td>${r.VLTOTAL>0?bdg((r.MARGEM/r.VLTOTAL*100).toFixed(2)):'—'}</td>
+      <td class="tn">${$N(r.RCAS)}</td>
+    </tr>`).join('');
+}
+function fornSummSort(m,el){
+  el.closest('.card-actions').querySelectorAll('.chip').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  _fornSummMode=m;
+  renderFornSumm();
+}
+function filterFornSumm(){ renderFornSumm(); }
+
+
+/* ═══════════════════════════════════════════════════════
+   TAB 2: EQUIPES & DRILLDOWN INLINE
+
+   Hierarquia: Equipe → Gerente → Supervisor → RCA
+   Cada nível expande inline abaixo da tabela principal.
+   O drillDown armazena o estado em _drill.stack.
+═══════════════════════════════════════════════════════ */
+
+/* Colunas por nível */
+const COLS = {
+  equipe: [
+    {k:'EQUIPE',      lbl:'Equipe',    L:true, fn:d=>`${eqBdg(d.EQUIPE)} <strong>${d.EQUIPE}</strong>`},
+    {k:'VLTOTAL',     lbl:'Vendas',           fn:d=>R$(d.VLTOTAL)},
+    {k:'META',        lbl:'Meta',             fn:d=>+d.META>0?R$(d.META):'—'},
+    {k:'PERC_META',   lbl:'% Meta',           fn:d=>+d.META>0?prog(d.PERC_META):'—'},
+    {k:'MARGEM',      lbl:'Margem R$',        fn:d=>`<span style="color:${cv(d.MARGEM)}">${R$(d.MARGEM)}</span>`},
+    {k:'PERC_MARGEM', lbl:'% Mg',             fn:d=>bdg(d.PERC_MARGEM)},
+    {k:'PEDIDOS',     lbl:'Pedidos',          fn:d=>$N(d.PEDIDOS)},
+    {k:'RCAS',        lbl:'RCAs',             fn:d=>$N(d.RCAS)},
+    {k:'_drill',      lbl:'Detalhar', L:true, fn:(d,i)=>`<button class="drill-btn" id="dbtn-${i}" onclick="expandLevel('gerente',${JSON.stringify(d).replace(/"/g,'&quot;')},${i})"><span class="ico">▶</span> Gerentes</button>`},
+  ],
+  gerente: [
+    {k:'GERENTE',     lbl:'Gerente',   L:true, fn:d=>`<strong>${d.GERENTE}</strong>`},
+    {k:'EQUIPE',      lbl:'Equipe',    L:true, fn:d=>eqBdg(d.EQUIPE)},
+    {k:'VLTOTAL',     lbl:'Vendas',           fn:d=>R$(d.VLTOTAL)},
+    {k:'META',        lbl:'Meta',             fn:d=>+d.META>0?R$(d.META):'—'},
+    {k:'PERC_META',   lbl:'% Meta',           fn:d=>+d.META>0?prog(d.PERC_META):'—'},
+    {k:'MARGEM',      lbl:'Margem R$',        fn:d=>`<span style="color:${cv(d.MARGEM)}">${R$(d.MARGEM)}</span>`},
+    {k:'PERC_MARGEM', lbl:'% Mg',             fn:d=>bdg(d.PERC_MARGEM)},
+    {k:'PEDIDOS',     lbl:'Pedidos',          fn:d=>$N(d.PEDIDOS)},
+    {k:'RCAS',        lbl:'RCAs',             fn:d=>$N(d.RCAS)},
+    {k:'_drill',      lbl:'Detalhar', L:true, fn:(d,i)=>`<button class="drill-btn" id="dbtn-${i}" onclick="expandLevel('supervisor',${JSON.stringify(d).replace(/"/g,'&quot;')},${i})"><span class="ico">▶</span> Supervisores</button>`},
+  ],
+  supervisor: [
+    {k:'EQUIPE',      lbl:'Equipe',    L:true, fn:d=>`${eqBdg(d.EQUIPE)} <strong>${d.EQUIPE}</strong>`},
+    {k:'SUPERVISOR',  lbl:'Supervisor',L:true, fn:d=>`<span style="font-size:12px">${d.SUPERVISOR}</span>`},
+    {k:'GERENTE',     lbl:'Gerente',   L:true, fn:d=>`<span style="color:var(--muted);font-size:11px">${d.GERENTE}</span>`},
+    {k:'VLTOTAL',     lbl:'Vendas',           fn:d=>R$(d.VLTOTAL)},
+    {k:'META',        lbl:'Meta',             fn:d=>+d.META>0?R$(d.META):'—'},
+    {k:'PERC_META',   lbl:'% Meta',           fn:d=>+d.META>0?prog(d.PERC_META):'—'},
+    {k:'MARGEM',      lbl:'Margem R$',        fn:d=>`<span style="color:${cv(d.MARGEM)}">${R$(d.MARGEM)}</span>`},
+    {k:'PERC_MARGEM', lbl:'% Mg',             fn:d=>bdg(d.PERC_MARGEM)},
+    {k:'PEDIDOS',     lbl:'Pedidos',          fn:d=>$N(d.PEDIDOS)},
+    {k:'RCAS',        lbl:'RCAs',             fn:d=>$N(d.RCAS)},
+    {k:'_drill',      lbl:'Detalhar', L:true, fn:(d,i)=>`<button class="drill-btn" id="dbtn-${i}" onclick="expandLevel('rca',${JSON.stringify(d).replace(/"/g,'&quot;')},${i})"><span class="ico">▶</span> RCAs</button>`},
+  ],
+  rca: [
+    {k:'RCA',         lbl:'RCA',       L:true, fn:d=>`<strong>${d.RCA}</strong>`},
+    {k:'EQUIPE',      lbl:'Equipe',    L:true, fn:d=>eqBdg(d.EQUIPE)},
+    {k:'SUPERVISOR',  lbl:'Supervisor',L:true, fn:d=>`<span style="color:var(--muted);font-size:11px">${d.SUPERVISOR}</span>`},
+    {k:'VLTOTAL',     lbl:'Vendas',           fn:d=>R$(d.VLTOTAL)},
+    {k:'META',        lbl:'Meta',             fn:d=>+d.META>0?R$(d.META):'—'},
+    {k:'PERC_META',   lbl:'% Meta',           fn:d=>+d.META>0?prog(d.PERC_META):'—'},
+    {k:'MARGEM',      lbl:'Margem R$',        fn:d=>`<span style="color:${cv(d.MARGEM)}">${R$(d.MARGEM)}</span>`},
+    {k:'PERC_MARGEM', lbl:'% Mg',             fn:d=>bdg(d.PERC_MARGEM)},
+    {k:'PEDIDOS',     lbl:'Pedidos',          fn:d=>$N(d.PEDIDOS)},
+    {k:'_drill',      lbl:'Fornecedores',L:true, fn:(d,i)=>`<button class="drill-btn" id="dbtn-${i}" onclick="expandLevel('fornec',${JSON.stringify(d).replace(/"/g,'&quot;')},${i})"><span class="ico">▶</span> Ver Fornec.</button>`},
+  ],
+};
+
+const LEVEL_NAMES = {equipe:'Equipes',gerente:'Gerentes',supervisor:'Supervisores',rca:'RCAs',fornec:'Fornecedores'};
+let _drillData  = []; // dados do nível atual
+let _drillLevel = 'equipe';
+let _drillStack = []; // [{level, label, data, filter}]
+let _expandedRow = -1;
+let _drillFilter = '';
+
+async function loadDrillLevel(level, filter={}) {
+  const tbody = document.getElementById('tblDrillBody');
+  const thead = document.getElementById('tblDrillHead');
+  tbody.innerHTML = ldg(COLS[level].length);
+  document.getElementById('drillPanel').style.display='none';
+  _expandedRow = -1;
+  _drillFilter = '';
+  document.getElementById('srchEq').value = '';
+
+  let ep='', extra='';
+  const qs = pqs();
+  if(level==='equipe')    ep='/api/por-equipe';
+  if(level==='gerente')   ep='/api/por-gerente', extra=(filter.equipe?`&equipe=${encodeURIComponent(filter.equipe)}`:'');
+  if(level==='supervisor')ep='/api/por-supervisor', extra=[(filter.codgerente?`&codgerente=${filter.codgerente}`:''), (filter.equipe?`&equipe=${encodeURIComponent(filter.equipe)}`:'')].join('');
+  if(level==='rca')       ep='/api/por-rca', extra=[(filter.codsupervisor?`&codsupervisor=${filter.codsupervisor}`:''), (filter.codgerente?`&codgerente=${filter.codgerente}`:''), (filter.equipe?`&equipe=${encodeURIComponent(filter.equipe)}`:'')].join('');
+
+  try {
+    const data = await load(ep, extra);
+    _drillData = data;
+    _drillLevel = level;
+
+    // HEAD
+    const cols = COLS[level];
+    thead.innerHTML = '<tr>'+cols.map(c=>`<th class="${c.L?'L':''}">${c.lbl}</th>`).join('')+'</tr>';
+
+    // BODY
+    renderDrillBody(data, level);
+    document.getElementById('lvlTitle').textContent = LEVEL_NAMES[level];
+  } catch(e){
+    tbody.innerHTML = emsg(e.message, COLS[level]?.length||8);
+  }
+}
+
+function renderDrillBody(data, level) {
+  const cols = COLS[level];
+  const filt = _drillFilter.toLowerCase();
+  // Remove "Sem Gerente" do nível gerente
+  const clean = level==='gerente' ? data.filter(d=>d.GERENTE!=='Sem Gerente') : data;
+  const filtered = filt ? clean.filter(d=>Object.values(d).some(v=>String(v).toLowerCase().includes(filt))) : clean;
+
+  document.getElementById('tblDrillBody').innerHTML = filtered.map((d,i)=>
+    `<tr id="drow-${i}">${cols.map(c=>`<td class="${c.L?'L':''} tn">${c.k==='_drill'?c.fn(d,i):c.fn(d)}</td>`).join('')}</tr>`
+  ).join('') || `<tr><td colspan="${cols.length}" style="text-align:center;color:var(--muted);padding:20px">Sem dados</td></tr>`;
+}
+
+function filterLevel() {
+  _drillFilter = document.getElementById('srchEq').value;
+  renderDrillBody(_drillData, _drillLevel);
+}
+
+/* EXPAND inline — abre sub-painel abaixo da tabela, não substitui */
+async function expandLevel(nextLevel, rowData, rowIdx) {
+  const btn = document.getElementById(`dbtn-${rowIdx}`);
+
+  // Toggle: se já está expandido no mesmo row, fecha
+  if(_expandedRow === rowIdx) {
+    closeDrill();
+    return;
+  }
+
+  // Fecha anterior se tinha outro aberto
+  if(_expandedRow >= 0) {
+    const old = document.getElementById(`dbtn-${_expandedRow}`);
+    if(old) old.classList.remove('open');
+  }
+  _expandedRow = rowIdx;
+  if(btn) btn.classList.add('open');
+
+  // Mostra o painel de drilldown
+  const panel = document.getElementById('drillPanel');
+  panel.style.display='block';
+  panel.innerHTML = `<div class="card"><div class="ldg"><span class="spin"></span>Carregando ${LEVEL_NAMES[nextLevel]}...</div></div>`;
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+
+  // Monta filtro para o próximo nível
+  const filter = {};
+  if(rowData.EQUIPE)      filter.equipe = rowData.EQUIPE;
+  if(rowData.CODGERENTE)  filter.codgerente = rowData.CODGERENTE;
+  if(rowData.CODSUPERVISOR) filter.codsupervisor = rowData.CODSUPERVISOR;
+
+  // Atualiza breadcrumb
+  const parentLabel = rowData.EQUIPE||rowData.GERENTE||rowData.SUPERVISOR||rowData.RCA||'';
+  updateBC(nextLevel, parentLabel, rowData);
+
+  // Para RCA → Fornecedores é diferente (não é uma tabela, é drill de fornecedor)
+  if(nextLevel === 'fornec') {
+    await loadFornecPorRca(rowData, panel);
+    return;
+  }
+
+  // Carrega próximo nível no painel
+  await loadDrillInPanel(nextLevel, filter, panel, rowData);
+}
+
+async function loadDrillInPanel(level, filter, container, parentRow) {
+  const cols = COLS[level];
+  container.innerHTML = `<div class="card">
+    <div class="card-hd">
+      <span class="card-title">${LEVEL_NAMES[level]} ${parentRow.EQUIPE?'— '+parentRow.EQUIPE:''} ${parentRow.GERENTE?'— '+parentRow.GERENTE:''} ${parentRow.SUPERVISOR?'— '+parentRow.SUPERVISOR:''}</span>
+      <div class="card-actions">
+        <input class="srch" id="srchSub" placeholder="Buscar..." oninput="filterSub()" style="width:140px">
+        <button class="btn btn-sm" onclick="closeDrill()">✕ Fechar</button>
+      </div>
+    </div>
+    <div class="tbl-wrap">
+      <table>
+        <thead><tr>${cols.map(c=>`<th class="${c.L?'L':''}">${c.lbl}</th>`).join('')}</tr></thead>
+        <tbody id="subBody">${ldg(cols.length)}</tbody>
+      </table>
+    </div>
+  </div>`;
+
+  let ep='', extra='';
+  if(level==='gerente')    ep='/api/por-gerente',    extra=(filter.equipe?`&equipe=${encodeURIComponent(filter.equipe)}`:'');
+  if(level==='supervisor') ep='/api/por-supervisor',  extra=[(filter.codgerente?`&codgerente=${filter.codgerente}`:''), (filter.equipe?`&equipe=${encodeURIComponent(filter.equipe)}`:'')].join('');
+  if(level==='rca')        ep='/api/por-rca',         extra=[(filter.codsupervisor?`&codsupervisor=${filter.codsupervisor}`:''), (filter.codgerente?`&codgerente=${filter.codgerente}`:''), (filter.equipe?`&equipe=${encodeURIComponent(filter.equipe)}`:'')].join('');
+
+  try {
+    let data = await load(ep, extra);
+    if(level==='gerente') data = data.filter(d=>d.GERENTE!=='Sem Gerente');
+    _subData = data;
+    const body = document.getElementById('subBody');
+    if(!data.length){ body.innerHTML=`<tr><td colspan="${cols.length}" style="text-align:center;color:var(--muted);padding:20px">Sem dados</td></tr>`; return; }
+
+    // Para RCA, adiciona botão de drill para fornecedores
+    body.innerHTML = data.map((d,i)=>`
+      <tr id="srow-${i}">${cols.map(c=>`<td class="${c.L?'L':''} tn">${c.k==='_drill'?buildSubDrill(level,d,i):c.fn(d)}</td>`).join('')}</tr>`
+    ).join('');
+
+    // Sub-panel dentro do sub-panel (para fornecedor de RCA)
+    if(level==='rca') {
+      container.innerHTML += `<div id="subFornPanel" style="margin-top:10px"></div>`;
+    }
+  } catch(e){
+    const body = document.getElementById('subBody');
+    if(body) body.innerHTML = emsg(e.message, cols.length);
+  }
+}
+
+let _subData = [];
+function filterSub(){
+  const q=(document.getElementById('srchSub')?.value||'').toLowerCase();
+  const body = document.getElementById('subBody'); if(!body||!_drillLevel) return;
+  // Re-render com filtro
+  const level = _subData[0] ? (Object.keys(_subData[0]).includes('SUPERVISOR')?'rca':(Object.keys(_subData[0]).includes('GERENTE')&&!Object.keys(_subData[0]).includes('CODGERENTE')?'supervisor':'supervisor')) : 'rca';
+  const cols = COLS['rca']; // fallback
+}
+
+function buildSubDrill(parentLevel, d, i) {
+  if(parentLevel==='rca') {
+    return `<button class="drill-btn btn-sm" onclick="loadFornecPorRcaInSub(${JSON.stringify(d).replace(/"/g,'&quot;')})"><span class="ico">▶</span> Fornecedores</button>`;
+  }
+  const nextLvl = {gerente:'supervisor', supervisor:'rca'}[parentLevel]||'rca';
+  return `<button class="drill-btn btn-sm" onclick="loadSubSub('${nextLvl}',${JSON.stringify(d).replace(/"/g,'&quot;')})"><span class="ico">▶</span> ${LEVEL_NAMES[nextLvl]}</button>`;
+}
+
+async function loadSubSub(level, parentRow) {
+  // Abre um terceiro nível dentro do sub-painel
+  const filter = {};
+  if(parentRow.EQUIPE)       filter.equipe = parentRow.EQUIPE;
+  if(parentRow.CODGERENTE)   filter.codgerente = parentRow.CODGERENTE;
+  if(parentRow.CODSUPERVISOR) filter.codsupervisor = parentRow.CODSUPERVISOR;
+  const container = document.getElementById('drillPanel');
+  await loadDrillInPanel(level, filter, container, parentRow);
+}
+
+async function loadFornecPorRca(rowData, container) {
+  container.innerHTML = `<div class="card">
+    <div class="card-hd">
+      <span class="card-title">Fornecedores de ${rowData.RCA}</span>
+      <button class="btn btn-sm" onclick="closeDrill()">✕ Fechar</button>
+    </div>
+    <div class="ldg"><span class="spin"></span></div>
+  </div>`;
+  try {
+    const data = await fetchJ(`${API}/api/fornec-por-rca?codusur=${rowData.CODUSUR}${pqs()}`);
+    const max = Math.max(...data.map(d=>+d.VLTOTAL||0),1);
+    container.innerHTML = `<div class="card">
+      <div class="card-hd">
+        <span class="card-title">📦 Fornecedores — <strong>${rowData.RCA}</strong></span>
+        <button class="btn btn-sm" onclick="closeDrill()">✕ Fechar</button>
+      </div>
+      <div class="forn-grid">
+        <div>
+          ${data.map(d=>`
+          <div class="forn-row">
+            <div style="flex:1;min-width:0">
+              <div class="forn-nome">${d.FORNECEDOR}</div>
+              <div class="forn-bar-wrap"><div class="forn-bar" style="width:${(+d.VLTOTAL/max*100).toFixed(1)}%"></div></div>
+            </div>
+            <div style="text-align:right;min-width:120px">
+              <div style="font-size:12px;font-weight:700">${R$(d.VLTOTAL)}</div>
+              <div style="font-size:10px">${bdg(d.PERC_MARGEM)}</div>
+            </div>
+          </div>`).join('')}
+        </div>
+        <div class="ch" style="height:260px"><canvas id="cFornRca"></canvas></div>
+      </div>
+    </div>`;
+    const top = data.slice(0,10);
+    hbar('cFornRca', top.map(d=>d.FORNECEDOR.split(' ').slice(0,2).join(' ')), top.map(d=>+d.VLTOTAL||0), Array(10).fill('rgba(200,16,46,.65)'));
+  } catch(e){ container.innerHTML=`<div class="emsg">⚠ ${e.message}</div>`; }
+}
+
+async function loadFornecPorRcaInSub(rowData) {
+  const panel = document.getElementById('subFornPanel') || document.getElementById('drillPanel');
+  panel.innerHTML = `<div class="card"><div class="ldg"><span class="spin"></span>Carregando fornecedores...</div></div>`;
+  await loadFornecPorRca(rowData, panel);
+  panel.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+function closeDrill() {
+  document.getElementById('drillPanel').style.display='none';
+  document.getElementById('drillPanel').innerHTML='';
+  if(_expandedRow>=0){ const b=document.getElementById(`dbtn-${_expandedRow}`); if(b) b.classList.remove('open'); }
+  _expandedRow=-1;
+}
+
+/* Breadcrumb do drilldown */
+function updateBC(level, label, rowData) {
+  const bc = document.getElementById('bcEquipes');
+  const lvlOrder = ['equipe','gerente','supervisor','rca'];
+  const curIdx = lvlOrder.indexOf(_drillLevel);
+  const nextIdx = lvlOrder.indexOf(level);
+
+  // Monta crumbs: nível atual + o que está sendo expandido
+  let html = `<span class="bc-link" onclick="closeDrill()">Equipes</span>`;
+  if(_drillLevel!=='equipe') html += ` <span class="bc-sep">›</span> <span class="bc-active">${LEVEL_NAMES[_drillLevel]}</span>`;
+  if(level && level!=='equipe') html += ` <span class="bc-sep">›</span> <span class="bc-active">${label} → ${LEVEL_NAMES[level]}</span>`;
+  bc.innerHTML = html;
+}
+
+/* Inicia drill no nível equipes */
+async function initDrill() {
+  _drillStack = [];
+  document.getElementById('bcEquipes').innerHTML='';
+  await loadDrillLevel('equipe', {});
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   TAB 3: FORNECEDORES (redesenhado)
+═══════════════════════════════════════════════════════ */
+let _fornEqFilter = '';
+let _fornListData = [];
+let _fornSelectedId = null;
+
+async function loadFornPanel() {
+  await Promise.all([loadFornKpis(), loadFornList()]);
+}
+
+async function loadFornKpis(){
+  try{
+    const d = await load('/api/por-equipe');
+    const total = d.reduce((s,r)=>s+(+r.VLTOTAL||0),0);
+    document.getElementById('fornKpis').innerHTML = d.slice(0,4).map(r=>`
+      <div class="kpi" style="--ka:${EQ_COL[r.EQUIPE]||'var(--red)'}">
+        <div class="kpi-lbl">${r.EQUIPE}</div>
+        <div class="kpi-val" style="color:${EQ_COL[r.EQUIPE]||'var(--red)'}">${R$(r.VLTOTAL)}</div>
+        <div class="kpi-sub">${((+r.VLTOTAL/total)*100).toFixed(1)}% do total · ${$N(r.PEDIDOS)} pedidos</div>
+      </div>`).join('');
+  }catch(e){}
+}
+
+async function loadFornList(){
+  document.getElementById('fornList').innerHTML='<div class="ldg"><span class="spin"></span></div>';
+  try{
+    let extra = _fornEqFilter ? `&equipe=${encodeURIComponent(_fornEqFilter)}` : '';
+    const data = await load('/api/fornec-por-equipe', extra);
+    _fornListData = data;
+    renderFornList(data);
+    const top = data.slice(0,12);
+    hbar('cFornBar', top.map(d=>d.FORNECEDOR.split(' ').slice(0,2).join(' ')), top.map(d=>+d.VLTOTAL||0), top.map(d=>EQ_COL[d.EQUIPE]||'rgba(200,16,46,.7)'));
+    document.getElementById('fornListTitle').textContent = `Fornecedores${_fornEqFilter?' — '+_fornEqFilter:''} (${data.length})`;
+  }catch(e){ document.getElementById('fornList').innerHTML=`<div class="emsg">⚠ ${e.message}</div>`; }
+}
+
+function renderFornList(data) {
+  const q = (document.getElementById('srchForn').value||'').toLowerCase();
+  const filtered = q ? data.filter(d=>d.FORNECEDOR.toLowerCase().includes(q)) : data;
+  const max = Math.max(...filtered.map(d=>+d.VLTOTAL||0),1);
+  document.getElementById('fornList').innerHTML = filtered.map(d=>`
+    <div class="forn-row ${_fornSelectedId===d.CODFORNEC?'sel':''}" onclick="selectFornecedor(${d.CODFORNEC},'${d.FORNECEDOR.replace(/'/g,"\\'")}')">
+      <div style="flex:1;min-width:0">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px">
+          ${eqBdg(d.EQUIPE)}
+          <span class="forn-nome">${d.FORNECEDOR}</span>
+        </div>
+        <div class="forn-bar-wrap"><div class="forn-bar" style="width:${(+d.VLTOTAL/max*100).toFixed(1)}%"></div></div>
+      </div>
+      <div style="text-align:right;min-width:110px;flex-shrink:0">
+        <div style="font-size:12px;font-weight:700">${R$(d.VLTOTAL)}</div>
+        <div style="font-size:10px">${bdg(d.PERC_MARGEM)} · ${$N(d.PEDIDOS)} peds</div>
+      </div>
+    </div>`).join('') || '<div style="color:var(--muted);text-align:center;padding:20px;font-size:12px">Sem resultados</div>';
+}
+
+function filterForn(){ renderFornList(_fornListData); }
+
+function setFornEq(eq, el){
+  document.querySelectorAll('#eqFiltForn button').forEach(b=>b.classList.remove('on'));
+  el.classList.add('on');
+  _fornEqFilter = eq;
+  _fornSelectedId = null;
+  document.getElementById('fornDetail').innerHTML=`<div class="forn-detail" style="display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;height:100%">← Selecione um fornecedor</div>`;
+  _cache = Object.fromEntries(Object.entries(_cache).filter(([k])=>!k.includes('fornec-por-equipe')));
+  loadFornList();
+}
+
+async function selectFornecedor(codfornec, nome){
+  _fornSelectedId = codfornec;
+  renderFornList(_fornListData); // re-render para marcar selecionado
+  const det = document.getElementById('fornDetail');
+  det.innerHTML=`<div class="forn-detail"><div class="ldg"><span class="spin"></span>Carregando detalhes...</div></div>`;
+  try{
+    const [byRca, byEq] = await Promise.all([
+      fetchJ(`${API}/api/rca-por-fornec?codfornec=${codfornec}${pqs()}`),
+      fetchJ(`${API}/api/fornec-por-equipe?codfornec=${codfornec}${pqs()}`),
+    ]);
+
+    // Agrupa RCAs por equipe
+    const eqMap = {};
+    byRca.forEach(r=>{ if(!eqMap[r.EQUIPE]) eqMap[r.EQUIPE]=[]; eqMap[r.EQUIPE].push(r); });
+    const totalVenda = byRca.reduce((s,r)=>s+(+r.VLTOTAL||0),0);
+
+    det.innerHTML=`
+      <div class="forn-detail" style="overflow-y:auto;max-height:calc(100vh - 320px)">
+        <div class="forn-detail-hd">📦 ${nome}</div>
+
+        <!-- KPIs do fornecedor -->
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:14px">
+          <div class="sub-kpi"><div class="sub-kpi-lbl">Total Vendas</div><div class="sub-kpi-val" style="color:var(--red)">${R$(totalVenda)}</div></div>
+          <div class="sub-kpi"><div class="sub-kpi-lbl">RCAs Ativos</div><div class="sub-kpi-val" style="color:var(--blue)">${byRca.length}</div></div>
+          <div class="sub-kpi"><div class="sub-kpi-lbl">Pedidos</div><div class="sub-kpi-val">${$N(byRca.reduce((s,r)=>s+(+r.PEDIDOS||0),0))}</div></div>
+        </div>
+
+        <!-- Distribuição por equipe -->
+        <div style="margin-bottom:14px">
+          <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:6px">Distribuição por equipe</div>
+          ${Object.entries(eqMap).sort((a,b)=>b[1].reduce((s,r)=>s+(+r.VLTOTAL||0),0)-a[1].reduce((s,r)=>s+(+r.VLTOTAL||0),0)).map(([eq,rcas])=>{
+            const eqTotal = rcas.reduce((s,r)=>s+(+r.VLTOTAL||0),0);
+            const pct_ = totalVenda>0?(eqTotal/totalVenda*100).toFixed(1):'0';
+            return `<div style="margin-bottom:6px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:3px">
+                ${eqBdg(eq)}
+                <span style="font-size:11px;font-weight:700">${R$(eqTotal)} <span style="color:var(--muted)">(${pct_}%)</span></span>
+              </div>
+              <div class="forn-bar-wrap" style="height:6px"><div class="forn-bar" style="width:${pct_}%;background:${EQ_COL[eq]||'var(--red)'}"></div></div>
+            </div>`;
+          }).join('')}
+        </div>
+
+        <!-- Top RCAs que vendem este fornecedor -->
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Top RCAs — ${nome}</div>
+        ${byRca.slice(0,15).map((r,i)=>`
+        <div class="forn-row">
+          <div style="flex:1;min-width:0">
+            <div style="display:flex;align-items:center;gap:5px">
+              <span style="color:var(--muted);font-size:10px;min-width:16px">${i+1}</span>
+              ${eqBdg(r.EQUIPE)}
+              <span style="font-size:12px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.RCA}</span>
+            </div>
+            <div style="font-size:10px;color:var(--muted);margin-top:1px;padding-left:21px">${r.SUPERVISOR||r.GERENTE||''}</div>
+          </div>
+          <div style="text-align:right;min-width:100px;flex-shrink:0">
+            <div style="font-size:12px;font-weight:700">${R$(r.VLTOTAL)}</div>
+            <div>${bdg(r.PERC_MARGEM)}</div>
+          </div>
+        </div>`).join('')}
+      </div>`;
+  }catch(e){ det.innerHTML=`<div class="emsg">⚠ ${e.message}</div>`; }
+}
+
+
+/* ═══════════════════════════════════════════════════════
+   RELOAD ALL
+═══════════════════════════════════════════════════════ */
+async function reloadAll(){
+  _cache={};
+  const btn = document.getElementById('btnRefresh');
+  const ico = document.getElementById('refreshIco');
+  if(btn){ btn.disabled=true; btn.style.opacity='0.7'; }
+  if(ico){ ico.style.display='inline-block'; ico.style.animation='sp .7s linear infinite'; }
+  document.getElementById('ts').textContent='Atualizando...';
+  try{
+    await Promise.all([
+      loadKPIs(), loadEvolucao(), loadEquipePie(),
+      loadFornTop(), loadRcaTop(), loadGerSumm(), loadFornSumm(),
+      initDrill(),
+    ]);
+    document.getElementById('ts').textContent = 'Atualizado às ' + new Date().toLocaleTimeString('pt-BR');
+  }catch(e){
+    document.getElementById('ts').textContent='⚠ Erro: '+e.message;
+  }finally{
+    if(btn){ btn.disabled=false; btn.style.opacity='1'; }
+    if(ico){ ico.style.animation='none'; }
+  }
+}
+
+loadMeses().then(reloadAll);
+setInterval(reloadAll, 5*60*1000);
+</script>
+</body>
+</html>
