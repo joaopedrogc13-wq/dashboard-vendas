@@ -261,6 +261,19 @@ tr:hover td{background:rgba(200,16,46,.04)}
     <div class="ldg" style="grid-column:1/-1"><span class="spin"></span>Carregando...</div>
   </div>
 
+  <!-- Acompanhamento Diário -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-hd">
+      <span class="card-title">📅 Realizado vs Meta — Dia a Dia</span>
+      <div class="card-actions">
+        <span class="chip on" id="diaChipVenda" onclick="diaSwitch('venda',this)">Venda</span>
+        <span class="chip" id="diaChipMargem" onclick="diaSwitch('margem',this)">Margem</span>
+        <span id="diaAcum" style="font-size:11px;color:var(--muted);margin-left:8px"></span>
+      </div>
+    </div>
+    <div style="height:220px"><canvas id="cDiario"></canvas></div>
+  </div>
+
   <!-- Gráfico Vendas vs Meta vs Margem mês a mês -->
   <div class="card" style="margin-bottom:14px">
     <div class="card-hd">
@@ -630,6 +643,89 @@ function renderEvol() {
   lineChart('cEvol', d.map(x=>fmtMes(x.MES)), ds);
 }
 function evolSort(m, el){ document.querySelectorAll('#p-visao .card:first-child .chip').forEach(x=>x.classList.remove('on')); el.classList.add('on'); _evolMode=m; renderEvol(); }
+
+/* ─── GRÁFICO DIÁRIO ──────────────────────────────────────────────────── */
+let _diaData = [];
+let _diaMode = 'venda';
+
+async function loadDiario() {
+  try {
+    _diaData = await load('/api/por-dia');
+    renderDiario();
+  } catch(e) { console.warn('Diário:', e); }
+}
+
+function diaSwitch(m, el) {
+  document.querySelectorAll('#diaChipVenda,#diaChipMargem').forEach(x=>x.classList.remove('on'));
+  el.classList.add('on');
+  _diaMode = m;
+  renderDiario();
+}
+
+function renderDiario() {
+  const d = _diaData;
+  if (!d || !d.length) return;
+  kill('cDiario');
+
+  const fmt  = v => 'R$'+Intl.NumberFormat('pt-BR',{notation:'compact',maximumFractionDigits:1}).format(v);
+  const fmtD = s => { const p=s.split('-'); return `${p[2]}/${p[1]}`; };
+
+  const isMargem = _diaMode === 'margem';
+  const vals     = d.map(x => isMargem ? (+x.MARGEM||0) : (+x.VLTOTAL||0));
+  const metas    = d.map(x => +x.META_DIA||0);
+
+  // Acumulado do período
+  const acumVenda  = d.reduce((s,x)=>s+(+x.VLTOTAL||0),0);
+  const acumMeta   = d.reduce((s,x)=>s+(+x.META_DIA||0),0);
+  const pctAcum    = acumMeta ? ((acumVenda/acumMeta)*100).toFixed(1) : '—';
+  document.getElementById('diaAcum').textContent =
+    `Acum. mês: ${fmt(acumVenda)} / Meta ${fmt(acumMeta)} · ${pctAcum}%`;
+
+  // Cores: verde se >= meta, vermelho se abaixo
+  const barColors = vals.map((v,i) =>
+    metas[i] && v >= metas[i] ? 'rgba(34,197,94,.8)' : 'rgba(200,16,46,.75)'
+  );
+
+  _charts['cDiario'] = new Chart(document.getElementById('cDiario'), {
+    type: 'bar',
+    data: {
+      labels: d.map(x=>fmtD(x.DIA)),
+      datasets: [
+        {
+          label: isMargem ? 'Margem' : 'Vendas',
+          data: vals,
+          backgroundColor: barColors,
+          borderRadius: 3,
+          order: 2,
+        },
+        {
+          label: 'Meta Dia',
+          data: metas,
+          type: 'line',
+          borderColor: '#f59e0b',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          borderDash: [5,4],
+          pointRadius: 3,
+          pointBackgroundColor: '#f59e0b',
+          tension: 0,
+          order: 1,
+        }
+      ]
+    },
+    options: {
+      ...baseOpts,
+      scales: {
+        x: {...axOpts},
+        y: { ...axOpts, ticks: {...axOpts.ticks, callback: v=>fmt(v)} }
+      },
+      plugins: {
+        ...baseOpts.plugins,
+        tooltip: { callbacks: { label: ctx=>` ${ctx.dataset.label}: ${fmt(ctx.parsed.y)}` } }
+      }
+    }
+  });
+}
 
 /* Gráfico Vendas vs Meta vs Margem — barras agrupadas */
 function renderEvolTriple() {
@@ -1245,7 +1341,7 @@ async function reloadAll(){
   document.getElementById('ts').textContent='Atualizando...';
   try{
     await Promise.all([
-      loadKPIs(), loadEvolucao(), loadEquipePie(),
+      loadKPIs(), loadEvolucao(), loadDiario(), loadEquipePie(),
       loadFornTop(), loadRcaTop(), loadGerSumm(), loadFornSumm(),
       initDrill(),
     ]);

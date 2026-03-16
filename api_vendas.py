@@ -177,6 +177,41 @@ ORDER BY 1
 """
 
 
+def SQL_POR_DIA(kvf, mi, mf):
+    """Vendas dia a dia no período selecionado, com meta diária rateada."""
+    mp = meta_periodo(mi, mf)
+    return f"""
+WITH vendas_dia AS (
+    SELECT
+        TRUNC(k.DTSAIDA)                            as DIA,
+        ROUND(SUM(k.QTVENDIDA * k.PRECOUNITCONT),2) as VLTOTAL,
+        ROUND(SUM(k.QTVENDIDA * k.CUSTOREAL),2)     as VLCUSTO
+    FROM CSOUSA.K_VENDA k
+    WHERE 1=1 {KV_BASE} {kvf}
+    GROUP BY TRUNC(k.DTSAIDA)
+),
+meta_mes AS (
+    SELECT
+        TRUNC(DATA,'MM')                                   as MES_DT,
+        SUM(VLVENDAPREV)                                   as META_MES,
+        LAST_DAY(TRUNC(DATA,'MM')) - TRUNC(DATA,'MM') + 1 as DIAS_MES
+    FROM CSOUSA.PCMETA
+    WHERE TIPOMETA IN ('F','D')
+    AND {mp}
+    GROUP BY TRUNC(DATA,'MM')
+)
+SELECT
+    TO_CHAR(v.DIA,'YYYY-MM-DD')                          as DIA,
+    v.VLTOTAL,
+    v.VLCUSTO,
+    ROUND(v.VLTOTAL - v.VLCUSTO, 2)                      as MARGEM,
+    ROUND(NVL(m.META_MES,0) / NULLIF(m.DIAS_MES,0), 2)  as META_DIA
+FROM vendas_dia v
+LEFT JOIN meta_mes m ON TRUNC(v.DIA,'MM') = m.MES_DT
+ORDER BY v.DIA
+"""
+
+
 def SQL_POR_EQUIPE(kvf, mi, mf):
     ec = equipe_case('g')
     return f"""
@@ -411,6 +446,9 @@ class Handler(BaseHTTPRequestHandler):
                         row['META'] = meta_map.get(row['MES'], 0)
                     data = vendas
                     cache_set(ck, data)
+
+            elif path == '/api/por-dia':
+                data = cached_query(ck, SQL_POR_DIA(kvf, mi, mf))
 
             elif path == '/api/por-equipe':
                 data = cached_query(ck, SQL_POR_EQUIPE(kvf, mi, mf))
