@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Giro de Estoque — Cabral & Sousa</title>
+<style>
+:root {
+  --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3350;
+  --accent:#4f8ef7; --accent2:#7c5cbf; --green:#34d399; --yellow:#fbbf24;
+  --red:#f87171; --orange:#fb923c; --text:#e2e8f0; --muted:#8892a4;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;}
+
+/* HEADER */
+.header{background:linear-gradient(135deg,#1a1d27,#22263a);border-bottom:1px solid var(--border);padding:18px 28px;display:flex;align-items:center;justify-content:space-between;}
+.header h1{font-size:18px;font-weight:700;color:#fff;}
+.header p{color:var(--muted);font-size:11px;margin-top:3px;}
+.hbadge{background:var(--accent);color:#fff;padding:4px 14px;border-radius:20px;font-size:11px;font-weight:600;}
+
+/* KPIs */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;padding:20px 28px 0;}
+.kpi{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 18px;}
+.kpi-lbl{color:var(--muted);font-size:10px;text-transform:uppercase;letter-spacing:.8px;margin-bottom:6px;}
+.kpi-val{font-size:20px;font-weight:700;color:#fff;}
+.kpi-sub{color:var(--muted);font-size:10px;margin-top:3px;}
+.bt-accent{border-top:3px solid var(--accent);}
+.bt-green{border-top:3px solid var(--green);}
+.bt-yellow{border-top:3px solid var(--yellow);}
+.bt-red{border-top:3px solid var(--red);}
+.bt-purple{border-top:3px solid var(--accent2);}
+
+/* TABS */
+.tabs{display:flex;gap:0;padding:20px 28px 0;border-bottom:1px solid var(--border);}
+.tab{padding:10px 20px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent;transition:all .15s;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--accent);border-bottom-color:var(--accent);}
+
+/* PANELS */
+.panel{display:none;padding:20px 28px 32px;}
+.panel.active{display:block;}
+
+/* CONTROLS */
+.controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px;}
+.search{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 13px;color:var(--text);font-size:13px;width:260px;outline:none;}
+.search:focus{border-color:var(--accent);}
+.search::placeholder{color:var(--muted);}
+select.flt{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:7px 13px;color:var(--text);font-size:13px;outline:none;cursor:pointer;}
+select.flt:focus{border-color:var(--accent);}
+.cnt{margin-left:auto;background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:3px 13px;font-size:11px;color:var(--muted);}
+.cnt span{color:var(--text);font-weight:600;}
+
+/* TABLE */
+.twrap{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+table{width:100%;border-collapse:collapse;}
+thead tr{background:var(--surface2);}
+thead th{padding:10px 14px;text-align:left;font-size:10px;text-transform:uppercase;letter-spacing:.8px;color:var(--muted);white-space:nowrap;cursor:pointer;user-select:none;border-bottom:1px solid var(--border);}
+thead th:hover{color:var(--text);}
+thead th.thact{color:var(--accent);}
+tbody tr{border-bottom:1px solid var(--border);transition:background .12s;}
+tbody tr:last-child{border-bottom:none;}
+tbody tr:hover{background:var(--surface2);}
+tbody td{padding:10px 14px;vertical-align:middle;}
+.num{text-align:right;font-variant-numeric:tabular-nums;}
+.muted{color:var(--muted);}
+.empty td{text-align:center;padding:36px;color:var(--muted);}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;white-space:nowrap;}
+.bg{background:rgba(52,211,153,.15);color:var(--green);}
+.by{background:rgba(251,191,36,.15);color:var(--yellow);}
+.br{background:rgba(248,113,113,.15);color:var(--red);}
+.bo{background:rgba(251,146,60,.15);color:var(--orange);}
+.bx{background:rgba(136,146,164,.15);color:var(--muted);}
+
+/* BAR */
+.bar-wrap{display:flex;align-items:center;gap:7px;}
+.bar-bg{width:65px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0;}
+.bar-fill{height:100%;border-radius:3px;}
+.bar-val{font-weight:600;font-size:13px;min-width:34px;}
+
+/* SECTION TITLE */
+.section-title{font-size:13px;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:.8px;margin-bottom:12px;}
+
+/* CATEGORY GRID */
+.cat-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:24px;}
+.cat-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px;}
+.cat-card-title{font-weight:600;font-size:13px;margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.cat-row{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;font-size:12px;}
+.cat-row .lbl{color:var(--muted);}
+.dias-pill{padding:2px 8px;border-radius:20px;font-size:11px;font-weight:600;}
+.progress-wrap{margin-top:8px;}
+.progress-bg{width:100%;height:4px;background:var(--border);border-radius:2px;overflow:hidden;}
+.progress-fill{height:100%;border-radius:2px;}
+
+/* FILIAL CARDS */
+.filial-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;}
+.filial-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;}
+.filial-name{font-weight:600;font-size:12px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.filial-city{color:var(--muted);font-size:10px;margin-bottom:10px;}
+.filial-stat{display:flex;justify-content:space-between;font-size:11px;margin-bottom:4px;}
+.filial-stat .lbl{color:var(--muted);}
+.filial-dias{font-size:18px;font-weight:700;margin-top:8px;}
+
+/* LEGEND */
+.legend{display:flex;gap:18px;padding:14px 28px 0;flex-wrap:wrap;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
+.ldot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div>
+    <h1>GIRO DE ESTOQUE — ANÁLISE COMPLETA</h1>
+    <p>Últimos 90 dias &nbsp;·&nbsp; Excluídos: Brindes e Expositores &nbsp;·&nbsp; Oracle PROD — CSOUSA &nbsp;·&nbsp; 16/03/2026</p>
+  </div>
+  <div class="hbadge">90 DIAS</div>
+</div>
+
+<div class="kpis">
+  <div class="kpi bt-accent"><div class="kpi-lbl">Fornecedores Ativos</div><div class="kpi-val">508</div><div class="kpi-sub">com estoque &gt; 0</div></div>
+  <div class="kpi bt-green"><div class="kpi-lbl">Produtos no Escopo</div><div class="kpi-val">17.559</div><div class="kpi-sub">excl. brindes / expositores</div></div>
+  <div class="kpi bt-purple"><div class="kpi-lbl">Valor em Estoque</div><div class="kpi-val">R$ 132,0M</div><div class="kpi-sub">custo real</div></div>
+  <div class="kpi bt-yellow"><div class="kpi-lbl">Vendas 90 Dias</div><div class="kpi-val">181,8M un.</div><div class="kpi-sub">operação S — saída</div></div>
+  <div class="kpi bt-red"><div class="kpi-lbl">Produtos em Excesso</div><div class="kpi-val" id="kpiExcesso">—</div><div class="kpi-sub">dias estoque &gt; 90</div></div>
+</div>
+
+<div class="legend">
+  <div class="legend-item"><div class="ldot" style="background:var(--green)"></div> Giro alto &lt; 30 dias</div>
+  <div class="legend-item"><div class="ldot" style="background:var(--yellow)"></div> Atenção 30–90 dias</div>
+  <div class="legend-item"><div class="ldot" style="background:var(--red)"></div> Excesso &gt; 90 dias</div>
+  <div class="legend-item"><div class="ldot" style="background:var(--orange)"></div> Crítico &gt; 180 dias</div>
+  <div class="legend-item"><div class="ldot" style="background:var(--muted)"></div> Sem venda no período</div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" onclick="switchTab('fornecedor')">Por Fornecedor</div>
+  <div class="tab" onclick="switchTab('categoria')">Por Categoria / Seção</div>
+  <div class="tab" onclick="switchTab('filial')">Por Filial</div>
+  <div class="tab" onclick="switchTab('produtos')">Produtos em Excesso</div>
+</div>
+
+<!-- ===================== ABA FORNECEDOR ===================== -->
+<div id="tab-fornecedor" class="panel active">
+  <div class="controls">
+    <input class="search" type="text" id="f-search" placeholder="🔍 Buscar fornecedor..." oninput="renderFornecedor()">
+    <select class="flt" id="f-status" onchange="renderFornecedor()">
+      <option value="">Todos os status</option>
+      <option value="green">Giro alto (&lt; 30d)</option>
+      <option value="yellow">Atenção (30–90d)</option>
+      <option value="red">Excesso (&gt; 90d)</option>
+      <option value="gray">Sem venda</option>
+    </select>
+    <select class="flt" id="f-sort" onchange="renderFornecedor()">
+      <option value="giro_d">Ordenar: Giro ↓</option>
+      <option value="dias_a">Ordenar: Dias ↑</option>
+      <option value="valor_d">Ordenar: Valor Estoque ↓</option>
+      <option value="vendas_d">Ordenar: Vendas ↓</option>
+      <option value="nome_a">Ordenar: Nome A→Z</option>
+    </select>
+    <div class="cnt">Exibindo <span id="f-cnt">—</span> fornecedores</div>
+  </div>
+  <div class="twrap">
+    <table>
+      <thead><tr>
+        <th>Fornecedor</th>
+        <th class="num">Produtos</th>
+        <th class="num">Estoque Qtd</th>
+        <th class="num">Valor Estoque</th>
+        <th class="num">Vendas 90d</th>
+        <th class="num">Venda/Dia</th>
+        <th>Dias Estoque</th>
+        <th>Giro 90d</th>
+        <th>Status</th>
+      </tr></thead>
+      <tbody id="f-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===================== ABA CATEGORIA ===================== -->
+<div id="tab-categoria" class="panel">
+  <p class="section-title" style="margin-bottom:16px;">Top Categorias por Valor em Estoque — Ranking de Excesso</p>
+  <div class="twrap">
+    <table>
+      <thead><tr>
+        <th>Departamento</th>
+        <th class="num">Produtos</th>
+        <th class="num">Estoque Qtd</th>
+        <th class="num">Valor Estoque</th>
+        <th class="num">Vendas 90d</th>
+        <th>Dias Estoque</th>
+        <th>Giro</th>
+        <th>Status</th>
+      </tr></thead>
+      <tbody id="c-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ===================== ABA FILIAL ===================== -->
+<div id="tab-filial" class="panel">
+  <p class="section-title" style="margin-bottom:16px;">Distribuição de Estoque por Filial</p>
+  <div class="filial-grid" id="filial-grid"></div>
+</div>
+
+<!-- ===================== ABA PRODUTOS ===================== -->
+<div id="tab-produtos" class="panel">
+  <div class="controls">
+    <input class="search" type="text" id="p-search" placeholder="🔍 Buscar produto ou fornecedor..." oninput="renderProdutos()">
+    <select class="flt" id="p-depto" onchange="renderProdutos()">
+      <option value="">Todos os deptos</option>
+    </select>
+    <select class="flt" id="p-sort" onchange="renderProdutos()">
+      <option value="valor_d">Ordenar: Valor Estoque ↓</option>
+      <option value="dias_d">Ordenar: Dias ↓</option>
+      <option value="dias_a">Ordenar: Dias ↑</option>
+    </select>
+    <div class="cnt">Exibindo <span id="p-cnt">—</span> produtos</div>
+  </div>
+  <div class="twrap">
+    <table>
+      <thead><tr>
+        <th>Produto</th>
+        <th>Fornecedor</th>
+        <th>Depto / Seção</th>
+        <th class="num">Estoque Qtd</th>
+        <th class="num">Valor Estoque</th>
+        <th class="num">Vendas 90d</th>
+        <th>Dias Estoque</th>
+        <th>Situação</th>
+      </tr></thead>
+      <tbody id="p-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+// ===================== DADOS =====================
+
+// FORNECEDORES [cod, nome, prods, estqt, estval, vendas90, mediaDia, dias, giro]
+const FORN = [
+  [105,"PERNOD RICARD BRASIL",129,282094,11557835,9204930,102277,2.8,32.63],
+  [1764,"BROWN-FORMAN BEV WORLDW COM",21,3172,202386,68856,765,4.1,21.71],
+  [1360,"VCT BRASIL IMPORTAÇÃO E EXPORTAÇÃO",85,194754,6090812,3709676,41219,4.7,19.05],
+  [1119,"GALLO BRASIL DISTRIBUIÇÃO E COM.",31,21981,358528,316300,3514,6.3,14.39],
+  [1034,"PEPSICO DO BRASIL LTDA",384,802097,1887715,11252290,125025,6.4,14.03],
+  [41,"MOINHO CONQUISTA IND. E COM.",6,122,195,1704,19,6.4,13.97],
+  [86,"MONDELEZ BRASIL LTDA",418,6105834,47416699,73678685,818652,7.5,12.07],
+  [4470,"LBM COMERCIO ATACADISTA",4,34,85,353,4,8.7,10.38],
+  [323,"MARGUTI MATHIAS IND E COM PROD ALIM",2,47,469,476,5,8.9,10.13],
+  [149,"RED BULL DO BRASIL LTDA",30,4526437,25998307,44828460,498094,9.1,9.90],
+  [127,"J MACEDO S/A",148,296077,678838,2446370,27182,10.9,8.26],
+  [1279,"FERRERO DO BRASIL I.D.A LTDA",75,257121,1571464,1781692,19797,13.0,6.93],
+  [923,"MASTERFOODS BRASIL ALIMENTOS LTDA.",71,300982,1479216,2077587,23084,13.0,6.90],
+  [4391,"VINICOLA CANCAO",8,37358,763496,257105,2857,13.1,6.88],
+  [4429,"PANDURATA ALIMENTOS LTDA",98,1188713,2357056,7036661,78185,15.2,5.92],
+  [1010,"BAGLEY DO BRASIL ALIMENTOS LTDA",91,626261,709132,3670202,40780,15.4,5.86],
+  [1990,"NUTRISUL S.A. PRODUTOS ALIMENTICIOS",58,701881,921811,3329800,36998,19.0,4.74],
+  [14,"IND PROD ALIMENTICIOS CORY LTDA",118,390917,1145876,1768407,19649,19.9,4.52],
+  [175,"COOP. DE LAT V DO MUCURI LTDA",13,336,3535,1456,16,20.8,4.33],
+  [1463,"CIA IND DE ALIMENTAÇÃO TRADING CO.",14,8445,6252,36052,401,21.1,4.27],
+  [3124,"HEINZ BRASIL S.A.",108,639094,1133396,2717491,30194,21.2,4.25],
+  [273,"ZD ALIMENTOS S.A",26,3110,3580,11995,133,23.3,3.86],
+  [1310,"NISSIN FOODS DO BRASIL LTDA",82,1405047,1842847,5352712,59475,23.6,3.81],
+  [31,"ARCOR DO BRASIL LTDA",288,440159,2400685,1646161,18291,24.1,3.74],
+  [49,"POMPEIA S/A INDUSTRIA E COMERCIO",121,97243,839933,347102,3857,25.2,3.57],
+  [3586,"RECKITT BENCKISER PRODUTOS DE HIGIENE",231,565500,3039636,1841510,20461,27.6,3.26],
+  [13,"IND PROD ALIMENTICIOS CORY LTDA (2)",88,692755,2767940,2080353,23115,30.0,3.00],
+  [2576,"DIST. ACAUA COM. IND.PROD.ALIM.",53,63886,40192,190189,2113,30.2,2.98],
+  [132,"NORSA REFRIGERANTES LTDA",39,1899,4361,5533,61,30.9,2.91],
+  [123,"NESTLE BRASIL LTDA",132,32458,66753,87058,967,33.6,2.68],
+  [130,"J MACEDO DIST DE PROD ALIMENTOS",17,271,3279,708,8,34.4,2.61],
+  [1252,"ARCOR DO BRASIL",44,5337,99564,12252,136,39.2,2.30],
+  [474,"PERFETTI VAN MELLE BRASIL LTDA",40,24036,33248,54446,605,39.7,2.27],
+  [1206,"CANDEIAS MELO IND COM PROD ALIM",62,17115,10276,35090,390,43.9,2.05],
+  [404,"SIMAS INDUSTRIAL DE ALIMENTOS S/A",53,1800,14808,3573,40,45.3,1.99],
+  [29,"FABRICA DE DOCES CONFIRMA LTDA",37,534386,2222035,1001204,11124,48.0,1.87],
+  [153,"DORI ALIMENTOS LTDA",63,9726,28824,16525,184,53.0,1.70],
+  [3021,"ALVOAR LACTEOS NORDESTE S.A",17,5926,28441,9854,109,54.1,1.66],
+  [407,"MARILAN ALIMENTOS S/A",23,607,1172,990,11,55.2,1.63],
+  [3283,"CEVA VETERINÁRIA S/A",183,49230,1712150,78961,877,56.1,1.60],
+  [2152,"MONIN BRASIL IND COM CONS EMPR",95,18984,446410,28868,321,59.2,1.52],
+  [2457,"SANCHEZ CANO LTDA",88,100381,78835,151503,1683,59.6,1.51],
+  [35,"FABRICA DE DOCES ALIANCA EIRELI",27,6887,45226,9944,110,62.3,1.44],
+  [2135,"SANTA HELENA IND DE ALIMENTOS S/A",60,19798,357918,28300,314,63.0,1.43],
+  [1251,"MOET HENNESSY DO BRASIL",46,6400,320611,8931,99,64.5,1.40],
+  [25,"RICLAN S.A",181,140511,485810,184776,2053,68.4,1.32],
+  [792,"PECCIN S/A",117,26133,110253,34226,380,68.7,1.31],
+  [157,"FLORESTAL ALIMENTOS S A",26,1722,10290,2128,24,72.8,1.24],
+  [2628,"DR.OETKER BRASIL LTDA",151,1586,13986,1858,21,76.8,1.17],
+  [1729,"FINI COMERCIALIZADORA LTDA",61,12260,12634,13505,150,81.7,1.10],
+  [2422,"BOEHRINGER INGELHEIM ANIMAL HEALTH",62,27337,2575101,28750,319,85.6,1.05],
+  [401,"RIBERBALL MERCANTIL E INDUSTRIAL",265,2342,16314,2418,27,87.2,1.03],
+  [746,"DOCILE NORDESTE IND E COM PROD ALIM",83,7706,20447,6859,76,101.1,0.89],
+  [1580,"REGINA INDUSTRIA E COMERCIO S/A",802,8067,18462,5606,62,129.5,0.69],
+  [3581,"MOGIANA ALIMENTOS S/A",244,121486,461249,65227,725,167.6,0.54],
+  [47,"PETYAN INDUSTRIA DE ALIMENTOS LTDA",33,35374,1125119,21404,238,148.7,0.61],
+  [742,"MASTERFOODS BRASIL ALIMENTOS LTDA",231,24069,730182,7167,80,302.2,0.30],
+  [4129,"NUTRISANTOS ALIMENTAÇÃO ANIMAL",129,85088,433171,22690,252,337.5,0.27],
+  [2042,"CROMUS EMBALAGENS IND. E COM.",748,13685,29088,4684,52,262.9,0.34],
+  [2110,"FLEXMETAL COMERCIO EIRELI",498,3872,18110,238,3,1464.2,0.06],
+  [2917,"BEMDECORE COMERCIO DE EMBALAGENS",184,11543,8624,1523,17,682.1,0.13],
+];
+
+// CATEGORIAS [depto, prods, estqt, estval, vendas90, dias]
+const CAT = [
+  ["BEBIDAS",811,5242482,45811059,64899734,7.3],
+  ["GOMAS",73,997503,20811626,7160939,12.5],
+  ["CHOCOLATES",313,3075144,14300693,40348272,6.9],
+  ["DOCES",2605,2827558,12592841,9306551,27.3],
+  ["PB",80,584819,5553101,5634625,9.3],
+  ["BISCOITO",363,2249891,5155990,22961973,8.8],
+  ["CANDIES",46,503504,5012495,3532565,12.8],
+  ["ALIMENTOS",968,2154095,3639120,9399419,20.6],
+  ["LINHA GRANDES",476,81532,2602153,80087,91.6],
+  ["BAUDUCCO",82,1140906,2250331,6682204,15.4],
+  ["LIMPEZA",424,481266,1962543,1620336,26.7],
+  ["ELMA CHIPS",167,550000,1315400,3929678,12.6],
+  ["NEXGARD SPECTRA",10,12590,1185741,15966,71.0],
+  ["LINHA PET",343,38986,997065,399,8793.8],
+  ["NEXGARD",12,10646,971041,8862,108.1],
+  ["QUERO",52,510156,725811,2375371,19.3],
+  ["INSETICIDAS",45,83469,711596,186612,40.3],
+  ["SACARIA",137,12559,626354,6314,179.0],
+  ["UTILIDADES",6078,137040,591735,48363,255.0],
+  ["CONFEITARIA",420,30659,541461,59378,46.5],
+  ["ALIMENTOS PARA ANIMAIS",260,122570,481778,65257,169.0],
+  ["SUPLEMENTO",12,22947,447583,34562,59.8],
+  ["QUATREE",129,85088,433171,22690,337.5],
+  ["HIGIENE PESSOAL",540,146545,427678,4959,2659.6],
+  ["HEINZ",39,112817,362306,301774,33.6],
+  ["SALGADOS",67,16157,288022,24531,59.3],
+  ["FARINHAS DOMESTICAS",8,72889,242533,1298610,5.1],
+  ["VISCONTI",15,77543,241691,361047,19.3],
+  ["BIOLOGICOS",7,502,233666,398,113.5],
+  ["GROCERIES",17,16223,187318,82299,17.7],
+];
+
+// FILIAIS [cod, nome, cidade, prods, estqt, estval, vendas90]
+const FILIAIS = [
+  [5,"CABRAL & SOUSA","VITÓRIA DA CONQUISTA",4064,6238819,38417365,1306358],
+  [2,"CABRAL & SOUSA","VITÓRIA DA CONQUISTA",852,4427070,23693647,2254],
+  [3,"CABRAL & SOUSA","VITÓRIA DA CONQUISTA",2369,4050005,25783652,14337990],
+  [11,"CABRAL & SOUSA","ITABUNA",1605,1964859,13437283,2385546],
+  [10,"CABRAL & SOUSA","SIMÕES FILHO",709,1556805,11969483,4858640],
+  [13,"CABRAL & SOUSA","SIMÕES FILHO",619,1002615,6827316,2598657],
+  [9,"CABRAL & SOUSA","BARREIRAS",1678,1324038,6434101,2311139],
+  [6,"CMA DISTRIBUIDORA","VITÓRIA DA CONQUISTA",214,847976,2100577,940754],
+  [15,"BAHIA FORT - SALVADOR","SIMÕES FILHO",885,170320,2123671,81829],
+  [1,"CABRAL & SOUSA","VITÓRIA DA CONQUISTA",13599,590054,2106527,552261],
+  [14,"BAHIA FORT - CONQUISTA","VITÓRIA DA CONQUISTA",609,61641,1596165,7200],
+  [4,"CABRAL & SOUSA","VITÓRIA DA CONQUISTA",751,256361,734310,674823],
+  [18,"CMA DISTRIBUIDORA","BARREIRAS",95,386129,929442,614065],
+  [17,"BAHIA FORT AGROPECUÁRIOS","BARREIRAS",90,3739,216228,1637],
+  [19,"BAHIA FORT AGROPECUÁRIOS","ITABUNA",130,9300,211971,370],
+  [16,"BAHIA FORT - BARREIRAS","BARREIRAS",97,1481,37511,0],
+  [8,"CABRAL & SOUSA","BARREIRAS",7,3857,18627,0],
+];
+
+// PRODUTOS EM EXCESSO [cod, nome, fornecedor, depto, secao, estqt, estval, vendas90, dias]
+const PRODS = [
+  [88280,"RED BULL EDITIONS COCO 250 ML","RED BULL DO BRASIL LTDA","BEBIDAS","ENERGETICAS",50791,332038,0,9999],
+  [87339,"RED BULL EDITIONS ACAI 250 ML","RED BULL DO BRASIL LTDA","BEBIDAS","ENERGETICAS",42392,306186,0,9999],
+  [102313,"RED BULL EDITIONS PITAYA 250 ML","RED BULL DO BRASIL LTDA","BEBIDAS","ENERGETICAS",73978,290465,0,9999],
+  [16379,"MDLZ CHOC BIS LAKA LEITE 20 UN","MONDELEZ BRASIL LTDA","CHOCOLATES","BIS",59851,192454,0,9999],
+  [97839,"PERNOD CHAMP G MUMM DEMI SEC 750 ML","PERNOD RICARD BRASIL","BEBIDAS","ESPUMANTE",707,185327,0,9999],
+  [105741,"VCT VINHO MARQ CS CONCHA HERITAGE 750ML","VCT BRASIL IMPORTAÇÃO","BEBIDAS","VINHO",794,183798,56,1276.1],
+  [116334,"VCT VINHO FINJ DEM DULCE CONDENA 750 ML","VCT BRASIL IMPORTAÇÃO","BEBIDAS","VINHO",5259,145386,2280,207.6],
+  [116333,"VCT VINHO FINJ DEM CORTE DE TIN 750 ML","VCT BRASIL IMPORTAÇÃO","BEBIDAS","VINHO",5169,142898,3940,118.1],
+  [109905,"PERNOD BALLANTINES 10YO 750 ML","PERNOD RICARD BRASIL","BEBIDAS","ALCOOLICAS",1920,105470,38,4547.4],
+  [81823,"MARS WHISKAS CARNE 10,1 KG","MASTERFOODS BRASIL ALIMENTOS","SACARIA","WHISKAS 10,1KG",1433,101984,0,9999],
+  [116523,"REDBULL ENERGY ZERO 473ML","RED BULL DO BRASIL LTDA","BEBIDAS","ENERGETICAS",9240,90709,0,9999],
+  [81810,"MARS PED FILHOTE RACAS MD E GD 20 KG","MASTERFOODS BRASIL ALIMENTOS","SACARIA","PEDIGREE 20KG",879,88570,0,9999],
+  [110331,"PERNOD ROYAL SALUTE GRAIN 700ML","PERNOD RICARD BRASIL","BEBIDAS","ALCOOLICAS",163,84937,0,9999],
+  [87223,"RKT SBP PAST REFIL CITRONELA L12P10","RECKITT BENCKISER","INSETICIDAS","DETETIZADOR",15044,83662,19,71261.1],
+  [16351,"MDLZ CHOC BIS LAKA BR 20 UN","MONDELEZ BRASIL LTDA","CHOCOLATES","BIS",21839,81888,0,9999],
+  [87961,"VCT VINHO GRAN RESERVA RIB CAB SAU 750ML","VCT BRASIL IMPORTAÇÃO","BEBIDAS","VINHO",1624,78760,380,384.6],
+  [296,"ECEGON 5.000 UI","BIOGENESIS BAGO SAUDE ANIMAL","LINHA GRANDES","LINHA REPRODUTIVA",787,77633,0,9999],
+  [97122,"KINDER BUENO T2 WHITE LEITE 15X39 GR","FERRERO DO BRASIL","CHOCOLATES","O. CHOCOLATES",19959,73429,8265,217.3],
+  [114151,"FIPROLINE DUO 5L BR","CEVA VETERINÁRIA S/A","LINHA GRANDES","ECTOPARASITICIDAS",64,57512,19,303.2],
+  [81825,"MARS WHISKAS PEIXE 10,1 KG","MASTERFOODS BRASIL ALIMENTOS","SACARIA","WHISKAS 10,1KG",1086,56712,0,9999],
+  [114149,"FIPROLINE DUO 1L BR","CEVA VETERINÁRIA S/A","LINHA GRANDES","ECTOPARASITICIDAS",235,50502,0,9999],
+  [47,"PENCIVET PLUS PPU 30ML","MERCK SHARP & DOHME SAUDE ANIMAL","LINHA GRANDES","ANTIMICROBIANOS",2315,47710,0,9999],
+  [116387,"MARS SNICKERS MINI VARIEDADES 180 GR","MASTERFOODS BRASIL ALIMENTOS.","DOCES","CHOCOLATE",9768,44370,6240,140.9],
+  [465,"DOPASER 10ML","CEVA VETERINÁRIA S/A","LINHA GRANDES","ANESTESICOS GRANDES",3269,43492,0,9999],
+  [113179,"RKT REPELENTE REPELEX ELET REFIL 40ML","RECKITT BENCKISER","INSETICIDAS","REPELENTE",4260,42591,665,576.5],
+  [86882,"TARRAZAS RESERVA CAB. SAUVIGNON 750 ML","MOET HENNESSY DO BRASIL","BEBIDAS","ESPUMANTE",847,41924,132,577.5],
+  [107639,"RED BULL SUMMER FIGO MACA BR 250 ML","RED BULL DO BRASIL LTDA","BEBIDAS","ENERGETICAS",7749,40766,0,9999],
+  [87335,"PERNOD WHISKY GLENLIVET FOUNDERS 750 ML","PERNOD RICARD BRASIL","BEBIDAS","WHISKY",265,39816,196,121.7],
+  [81806,"MARS PED RACAS PEQ ADULTO 20 KG","MASTERFOODS BRASIL ALIMENTOS","SACARIA","PEDIGREE 20KG",387,39353,0,9999],
+  [1237,"FLOK 500ML","BIOGENESIS BAGO SAUDE ANIMAL","LINHA GRANDES","ENDECTOCIDAS",288,38832,0,9999],
+  [52,"RB 51 25 DOSES","MERCK SHARP & DOHME SAUDE ANIMAL","LINHA GRANDES","VACINAS",366,37291,0,9999],
+  [116463,"FERRERO NUTELLA 400 GR","FERRERO DO BRASIL","DOCES","CREME DE AVELA",2388,32603,228,942.6],
+  [84474,"MDLZ TANG UVA 15X25 GR","MONDELEZ BRASIL LTDA","PB","TANG",4523,31924,0,9999],
+  [86115,"CHOC BIS XTRA LEITE 45 GR","MONDELEZ BRASIL LTDA","CHOCOLATES","BIS XTRA",26683,30675,0,9999],
+  [84452,"MDLZ TANG MORANGO 15X25 GR","MONDELEZ BRASIL LTDA","PB","TANG",4330,29692,0,9999],
+  [95974,"MY BIT BISC RECH CHOCOLATE 110 GR","NUTRISUL S.A.","BISCOITO","BISC. RECHEADO",25933,28722,1918,1216.9],
+  [84479,"MDLZ TANG LARANJA 15X25 GR","MONDELEZ BRASIL LTDA","PB","TANG",4390,28479,0,9999],
+  [110183,"PEPS DORITOS SWEET CHILLI 120 GR","PEPSICO DO BRASIL LTDA","ELMA CHIPS","DORITOS",5673,28376,741,689],
+  [85963,"PIR WALL A AMOR BLACK BLUE 24UN G 480 GR","VONPAR ALIMENTOS S A","DOCES","PIRULITO",1256,28223,0,9999],
+  [86835,"PERNOD VODKA ABSOLUT CITRON 750 ML","PERNOD RICARD BRASIL","BEBIDAS","VODKA",647,27873,546,106.6],
+  [96648,"ARCOR BALA BUT TOF CHOCOLATE 500 GR","ARCOR DO BRASIL LTDA","DOCES","ARCOR",791,27567,0,9999],
+  [113177,"RKT REPELENTE REPELEX FR.BOR 280ML","RECKITT BENCKISER","LIMPEZA","LIMP PERF",2191,27229,551,357.9],
+  [87321,"RKT INSETICIDA SBP REFIL AUT. 250ML","RECKITT BENCKISER","LIMPEZA","LIMP. PISO",984,27178,304,291.3],
+  [84453,"MDLZ TANG MARACUJA 15X25 GR","MONDELEZ BRASIL LTDA","PB","TANG",3696,26204,0,9999],
+  [110194,"PEPS LAYS SOUR CREAM 115 GR","PEPSICO DO BRASIL LTDA","ELMA CHIPS","LAYS",3344,19447,304,990],
+  [110192,"PEPS LAYS CLASSICAS 115 GR","PEPSICO DO BRASIL LTDA","ELMA CHIPS","LAYS",4167,24234,627,598.1],
+  [113178,"RKT REPELENTE REPELEX ELET AP+RF 40ML","RECKITT BENCKISER","INSETICIDAS","REPELENTE",2178,24937,950,206.3],
+  [84478,"MDLZ TANG ABACAXI 15X25 GR","MONDELEZ BRASIL LTDA","PB","TANG",3234,22190,0,9999],
+  [84473,"MDLZ TANG MANGA 15X25 GR","MONDELEZ BRASIL LTDA","PB","TANG",3351,21985,0,9999],
+  [113176,"RKT REPELENTE REPELEX MULT FR.BOR 280ML","RECKITT BENCKISER","LIMPEZA","LIMP PERF",2095,26036,1121,168.2],
+  [114388,"QUATREE GMET GTO CASTR MIX DE CNE 3 KG","NUTRISANTOS ALIMENTAÇÃO ANIMAL","QUATREE","GOURMET",741,21209,38,1755],
+  [109404,"ARCOR CHOCO BISCUIT BOB AMENDOIM 95 GR","BAGLEY DO BRASIL ALIMENTOS","BISCOITO","BISCOITO DOCE",4293,13573,812,475.8],
+  [84476,"MDLZ TANG LIMAO 15X25 GR","MONDELEZ BRASIL LTDA","PB","TANG",2488,17137,0,9999],
+  [84220,"CONDOR VASS V-8 V SUAVE UN","CONDOR S/A","LIMPEZA","VASSOURA",639,15639,0,9999],
+  [84238,"CONDOR VASS V-35 V FACIL UN","CONDOR S/A","LIMPEZA","VASSOURA",3221,17047,0,9999],
+  [86292,"MDLZ FRESH MORANGO 15X10 GR","MONDELEZ BRASIL LTDA","PB","FRESH",3762,15728,0,9999],
+  [85508,"ARCOR CH BIG B HORT 350 GR","ARCOR DO BRASIL LTDA","DOCES","ARCOR",6903,20981,0,9999],
+  [110157,"PEPS CEBOLITOS 138 GR","PEPSICO DO BRASIL LTDA","ELMA CHIPS","CEBOLITOS",2642,13703,874,272.1],
+  [82786,"MDLZ TANG GUARANA 15X25 GR","MONDELEZ BRASIL LTDA","PB","TANG",2519,16562,0,9999],
+  [86226,"MDLZ FRESH LARANJA 15X10 GR","MONDELEZ BRASIL LTDA","PB","FRESH",3099,12955,0,9999],
+  [86225,"MDLZ FRESH UVA 15X10 GR","MONDELEZ BRASIL LTDA","PB","FRESH",3548,14831,0,9999],
+];
+
+// ===================== HELPERS =====================
+const maxGiro = Math.max(...FORN.map(r=>r[8]));
+const maxEstVal = Math.max(...FILIAIS.map(r=>r[5]));
+
+function fmtQ(n){if(n>=1e6)return(n/1e6).toLocaleString('pt-BR',{maximumFractionDigits:1})+'M';if(n>=1e3)return(n/1e3).toLocaleString('pt-BR',{maximumFractionDigits:0})+'K';return n.toLocaleString('pt-BR');}
+function fmtM(n){if(n>=1e6)return'R$ '+(n/1e6).toLocaleString('pt-BR',{minimumFractionDigits:1,maximumFractionDigits:1})+'M';if(n>=1e3)return'R$ '+(n/1e3).toLocaleString('pt-BR',{maximumFractionDigits:0})+'K';return'R$ '+n.toLocaleString('pt-BR',{maximumFractionDigits:0});}
+function getSt(dias){if(dias>=9999)return'gray';if(dias<30)return'green';if(dias<=90)return'yellow';if(dias<=180)return'red';return'orange';}
+function stLabel(s){return{green:'Giro alto',yellow:'Atenção',red:'Excesso',orange:'Crítico',gray:'Sem venda'}[s];}
+function stClass(s){return{green:'bg',yellow:'by',red:'br',orange:'bo',gray:'bx'}[s];}
+function diasColor(s){return{green:'var(--green)',yellow:'var(--yellow)',red:'var(--red)',orange:'var(--orange)',gray:'var(--muted)'}[s];}
+function fmtDias(d){if(d>=9999)return'Sem venda';if(d>365)return'>1 ano';return d.toLocaleString('pt-BR',{maximumFractionDigits:1})+'d';}
+function giroColor(g){if(g>=5)return'var(--green)';if(g>=1)return'var(--yellow)';return'var(--red)';}
+
+// ===================== TAB SWITCH =====================
+function switchTab(name){
+  document.querySelectorAll('.tab').forEach((t,i)=>{t.classList.toggle('active',['fornecedor','categoria','filial','produtos'][i]===name);});
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.getElementById('tab-'+name).classList.add('active');
+}
+
+// ===================== FORNECEDOR =====================
+let fData=[...FORN];
+function renderFornecedor(){
+  const q=document.getElementById('f-search').value.toLowerCase();
+  const sf=document.getElementById('f-status').value;
+  const so=document.getElementById('f-sort').value;
+  fData=FORN.filter(r=>{
+    const mq=!q||r[1].toLowerCase().includes(q)||String(r[0]).includes(q);
+    const st=getSt(r[7]);
+    const msf=!sf||st===sf;
+    return mq&&msf;
+  });
+  const sortMap={giro_d:[8,-1],dias_a:[7,1],valor_d:[4,-1],vendas_d:[5,-1],nome_a:[1,1]};
+  const [si,sd]=sortMap[so]||[8,-1];
+  fData.sort((a,b)=>typeof a[si]==='string'?sd*a[si].localeCompare(b[si],'pt-BR'):sd*(a[si]-b[si]));
+  document.getElementById('f-cnt').textContent=fData.length;
+  const tb=document.getElementById('f-tbody');
+  if(!fData.length){tb.innerHTML='<tr class="empty"><td colspan="9">Nenhum resultado.</td></tr>';return;}
+  tb.innerHTML=fData.map(r=>{
+    const[cod,nome,prods,estqt,estval,vendas,media,dias,giro]=r;
+    const st=getSt(dias);const pct=Math.min(100,(giro/maxGiro)*100);const gc=giroColor(giro);
+    return`<tr>
+      <td><div style="font-weight:500;max-width:250px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${nome}">${nome}</div><div style="color:var(--muted);font-size:11px">Cód. ${cod}</div></td>
+      <td class="num">${prods.toLocaleString('pt-BR')}</td>
+      <td class="num">${fmtQ(estqt)}</td>
+      <td class="num">${fmtM(estval)}</td>
+      <td class="num">${fmtQ(vendas)}</td>
+      <td class="num muted">${media.toLocaleString('pt-BR',{maximumFractionDigits:0})}/d</td>
+      <td><span style="font-weight:600;color:${diasColor(st)}">${fmtDias(dias)}</span></td>
+      <td><div class="bar-wrap"><div class="bar-bg"><div class="bar-fill" style="width:${pct}%;background:${gc}"></div></div><span class="bar-val" style="color:${gc}">${giro.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div></td>
+      <td><span class="badge ${stClass(st)}">${stLabel(st)}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ===================== CATEGORIA =====================
+function renderCategoria(){
+  const maxV=Math.max(...CAT.map(r=>r[3]));
+  const tb=document.getElementById('c-tbody');
+  tb.innerHTML=CAT.map(r=>{
+    const[depto,prods,estqt,estval,vendas,dias]=r;
+    const st=getSt(dias);const pct=Math.min(100,(estval/maxV)*100);const bc=diasColor(st);
+    const giro=vendas>0?Math.round(vendas/estqt*100)/100:0;
+    return`<tr>
+      <td style="font-weight:600">${depto}</td>
+      <td class="num">${prods.toLocaleString('pt-BR')}</td>
+      <td class="num">${fmtQ(estqt)}</td>
+      <td class="num">
+        <div>${fmtM(estval)}</div>
+        <div style="margin-top:4px;width:100px;height:3px;background:var(--border);border-radius:2px;overflow:hidden"><div style="height:100%;width:${pct}%;background:${bc};border-radius:2px"></div></div>
+      </td>
+      <td class="num">${fmtQ(vendas)}</td>
+      <td><span style="font-weight:700;font-size:14px;color:${bc}">${fmtDias(dias)}</span></td>
+      <td><span style="font-weight:600;color:${giroColor(giro)}">${giro.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></td>
+      <td><span class="badge ${stClass(st)}">${stLabel(st)}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ===================== FILIAL =====================
+function renderFilial(){
+  const grid=document.getElementById('filial-grid');
+  grid.innerHTML=FILIAIS.map(r=>{
+    const[cod,nome,cidade,prods,estqt,estval,vendas]=r;
+    const dias=vendas>0?Math.round(estqt/(vendas/90)*10)/10:9999;
+    const st=getSt(dias);const pct=Math.min(100,(estval/maxEstVal)*100);
+    const giro=vendas>0?Math.round(vendas/estqt*100)/100:0;
+    return`<div class="filial-card" style="border-top:3px solid ${diasColor(st)}">
+      <div class="filial-name">${nome} — Filial ${cod}</div>
+      <div class="filial-city">${cidade}</div>
+      <div class="filial-stat"><span class="lbl">Valor Estoque</span><span style="font-weight:600">${fmtM(estval)}</span></div>
+      <div class="filial-stat"><span class="lbl">Vendas 90d</span><span>${fmtQ(vendas)}</span></div>
+      <div class="filial-stat"><span class="lbl">Produtos</span><span>${prods.toLocaleString('pt-BR')}</span></div>
+      <div style="margin:8px 0 4px"><div class="bar-bg" style="width:100%"><div class="bar-fill" style="width:${pct}%;background:${diasColor(st)}"></div></div></div>
+      <div style="display:flex;justify-content:space-between;align-items:baseline">
+        <div class="filial-dias" style="color:${diasColor(st)}">${fmtDias(dias)}</div>
+        <span class="badge ${stClass(st)}">${stLabel(st)}</span>
+      </div>
+      <div style="color:var(--muted);font-size:11px;margin-top:4px">Giro: <span style="color:${giroColor(giro)};font-weight:600">${giro.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2})}</span></div>
+    </div>`;
+  }).join('');
+}
+
+// ===================== PRODUTOS =====================
+let pData=[...PRODS];
+function initProdFilter(){
+  const deptos=[...new Set(PRODS.map(r=>r[3]))].sort();
+  const sel=document.getElementById('p-depto');
+  deptos.forEach(d=>{const o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});
+}
+function renderProdutos(){
+  const q=document.getElementById('p-search').value.toLowerCase();
+  const dp=document.getElementById('p-depto').value;
+  const so=document.getElementById('p-sort').value;
+  pData=PRODS.filter(r=>{
+    const mq=!q||r[1].toLowerCase().includes(q)||r[2].toLowerCase().includes(q);
+    const mdp=!dp||r[3]===dp;
+    return mq&&mdp;
+  });
+  if(so==='valor_d')pData.sort((a,b)=>b[6]-a[6]);
+  else if(so==='dias_d')pData.sort((a,b)=>b[8]-a[8]);
+  else pData.sort((a,b)=>a[8]-b[8]);
+  document.getElementById('p-cnt').textContent=pData.length;
+  const tb=document.getElementById('p-tbody');
+  if(!pData.length){tb.innerHTML='<tr class="empty"><td colspan="8">Nenhum resultado.</td></tr>';return;}
+  tb.innerHTML=pData.map(r=>{
+    const[cod,nome,forn,depto,secao,estqt,estval,vendas,dias]=r;
+    const st=getSt(dias);
+    return`<tr>
+      <td><div style="font-weight:500;max-width:240px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${nome}">${nome}</div><div style="color:var(--muted);font-size:11px">Cód. ${cod}</div></td>
+      <td style="color:var(--muted);font-size:12px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${forn}">${forn}</td>
+      <td><div style="font-size:12px">${depto}</div><div style="color:var(--muted);font-size:11px">${secao}</div></td>
+      <td class="num">${fmtQ(estqt)}</td>
+      <td class="num">${fmtM(estval)}</td>
+      <td class="num">${vendas>0?fmtQ(vendas):'<span style="color:var(--muted)">0</span>'}</td>
+      <td><span style="font-weight:700;font-size:13px;color:${diasColor(st)}">${fmtDias(dias)}</span></td>
+      <td><span class="badge ${stClass(st)}">${stLabel(st)}</span></td>
+    </tr>`;
+  }).join('');
+}
+
+// ===================== KPI EXCESSO =====================
+function calcKpiExcesso(){
+  const n=PRODS.length;
+  document.getElementById('kpiExcesso').textContent=n.toLocaleString('pt-BR')+' prods';
+}
+
+// ===================== INIT =====================
+renderFornecedor();
+renderCategoria();
+renderFilial();
+initProdFilter();
+renderProdutos();
+calcKpiExcesso();
+</script>
+</body>
+</html>
