@@ -245,6 +245,7 @@ tr:hover td{background:rgba(200,16,46,.04)}
 <!-- TABS -->
 <div class="tabs">
   <div class="tab active" data-p="visao">📊 Visão Geral</div>
+  <div class="tab" data-p="diario">📅 Dia a Dia</div>
   <div class="tab" data-p="equipes">🏢 Equipes &amp; Drilldown</div>
   <div class="tab" data-p="fornecedores">📦 Fornecedores</div>
 </div>
@@ -259,19 +260,6 @@ tr:hover td{background:rgba(200,16,46,.04)}
   <!-- KPIs -->
   <div class="kpi-row" id="kpiRow">
     <div class="ldg" style="grid-column:1/-1"><span class="spin"></span>Carregando...</div>
-  </div>
-
-  <!-- Acompanhamento Diário -->
-  <div class="card" style="margin-bottom:14px">
-    <div class="card-hd">
-      <span class="card-title">📅 Realizado vs Meta — Dia a Dia</span>
-      <div class="card-actions">
-        <span class="chip on" id="diaChipVenda" onclick="diaSwitch('venda',this)">Venda</span>
-        <span class="chip" id="diaChipMargem" onclick="diaSwitch('margem',this)">Margem</span>
-        <span id="diaAcum" style="font-size:11px;color:var(--muted);margin-left:8px"></span>
-      </div>
-    </div>
-    <div style="height:220px"><canvas id="cDiario"></canvas></div>
   </div>
 
   <!-- Gráfico Vendas vs Meta vs Margem mês a mês -->
@@ -370,6 +358,55 @@ tr:hover td{background:rgba(200,16,46,.04)}
   </div>
 
 </div><!-- /p-visao -->
+
+
+<!-- ══════════════════════════════════════════════════════════
+     TAB DIA A DIA
+══════════════════════════════════════════════════════════ -->
+<div class="panel" id="p-diario">
+
+  <!-- KPIs do dia atual -->
+  <div class="kpi-row" id="diaKpiRow" style="grid-template-columns:repeat(5,1fr);margin-bottom:16px">
+    <div class="ldg" style="grid-column:1/-1"><span class="spin"></span>Carregando...</div>
+  </div>
+
+  <!-- Gráfico principal -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-hd">
+      <span class="card-title">📅 Realizado vs Meta — Dia a Dia</span>
+      <div class="card-actions">
+        <span class="chip on" id="diaChipVenda" onclick="diaSwitch('venda',this)">Venda</span>
+        <span class="chip" id="diaChipMargem" onclick="diaSwitch('margem',this)">Margem</span>
+        <span id="diaAcum" style="font-size:11px;color:var(--muted);margin-left:8px"></span>
+      </div>
+    </div>
+    <div style="height:300px"><canvas id="cDiario"></canvas></div>
+  </div>
+
+  <!-- Tabela detalhada -->
+  <div class="card">
+    <div class="card-hd">
+      <span class="card-title">Detalhamento por Dia</span>
+    </div>
+    <div class="tbl-wrap noh">
+      <table id="tblDiario">
+        <thead><tr>
+          <th class="L">Data</th>
+          <th>Vendas</th>
+          <th>Meta Dia</th>
+          <th>% Meta</th>
+          <th>Margem R$</th>
+          <th>% Margem</th>
+          <th>Acum. Vendas</th>
+          <th>Acum. Meta</th>
+          <th>% Acum.</th>
+        </tr></thead>
+        <tbody id="bDiario"><tr><td colspan="9" class="ldg"><span class="spin"></span></td></tr></tbody>
+      </table>
+    </div>
+  </div>
+
+</div><!-- /p-diario -->
 
 
 <!-- ══════════════════════════════════════════════════════════
@@ -596,9 +633,11 @@ document.querySelector('.tabs').addEventListener('click', e=>{
   document.getElementById('p-'+p).classList.add('active');
   if(p==='fornecedores') loadFornPanel();
 });
+let _diaLoaded = false;
 function goTab(p){
   document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.p===p));
   document.querySelectorAll('.panel').forEach(x=>x.classList.toggle('active',x.id==='p-'+p));
+  if(p==='diario'){ _diaLoaded=true; loadDiario(); }
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -667,19 +706,67 @@ function renderDiario() {
   if (!d || !d.length) return;
   kill('cDiario');
 
+  const R    = v => 'R$'+Intl.NumberFormat('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2}).format(v);
   const fmt  = v => 'R$'+Intl.NumberFormat('pt-BR',{notation:'compact',maximumFractionDigits:1}).format(v);
   const fmtD = s => { const p=s.split('-'); return `${p[2]}/${p[1]}`; };
+  const pct  = (a,b) => b ? ((a/b)*100).toFixed(1)+'%' : '—';
+  const clr  = (ok) => ok ? 'color:#16a34a;font-weight:700' : 'color:#c8102e;font-weight:700';
 
   const isMargem = _diaMode === 'margem';
   const vals     = d.map(x => isMargem ? (+x.MARGEM||0) : (+x.VLTOTAL||0));
   const metas    = d.map(x => +x.META_DIA||0);
 
-  // Acumulado do período
-  const acumVenda  = d.reduce((s,x)=>s+(+x.VLTOTAL||0),0);
-  const acumMeta   = d.reduce((s,x)=>s+(+x.META_DIA||0),0);
-  const pctAcum    = acumMeta ? ((acumVenda/acumMeta)*100).toFixed(1) : '—';
-  document.getElementById('diaAcum').textContent =
-    `Acum. mês: ${fmt(acumVenda)} / Meta ${fmt(acumMeta)} · ${pctAcum}%`;
+  // Acumulados
+  const acumVenda = d.reduce((s,x)=>s+(+x.VLTOTAL||0),0);
+  const acumMeta  = d.reduce((s,x)=>s+(+x.META_DIA||0),0);
+  const acumMarg  = d.reduce((s,x)=>s+(+x.MARGEM||0),0);
+  const pctAcum   = acumMeta ? ((acumVenda/acumMeta)*100).toFixed(1) : '—';
+
+  // Atualiza label de acumulado
+  const acumEl = document.getElementById('diaAcum');
+  if(acumEl) acumEl.textContent = `Acum.: ${fmt(acumVenda)} / Meta ${fmt(acumMeta)} · ${pctAcum}%`;
+
+  // KPIs do painel diário (último dia com dados)
+  const hoje = d[d.length-1];
+  const kpiEl = document.getElementById('diaKpiRow');
+  if(kpiEl && hoje) {
+    const pctHoje = hoje.META_DIA ? ((+hoje.VLTOTAL / +hoje.META_DIA)*100).toFixed(1) : '—';
+    const pctMgHoje = hoje.VLTOTAL ? ((+hoje.MARGEM / +hoje.VLTOTAL)*100).toFixed(1) : '—';
+    const okHoje = +hoje.VLTOTAL >= +hoje.META_DIA;
+    kpiEl.innerHTML = `
+      <div class="kpi"><div class="kpi-lbl">Venda Hoje (${fmtD(hoje.DIA)})</div><div class="kpi-val" style="${clr(okHoje)}">${fmt(+hoje.VLTOTAL)}</div><div class="kpi-sub">Meta: ${fmt(+hoje.META_DIA)}</div></div>
+      <div class="kpi"><div class="kpi-lbl">% Meta Hoje</div><div class="kpi-val" style="${clr(okHoje)}">${pctHoje}%</div><div class="kpi-sub">${okHoje?'✔ Atingido':'✘ Abaixo'}</div></div>
+      <div class="kpi"><div class="kpi-lbl">Acum. Mês</div><div class="kpi-val">${fmt(acumVenda)}</div><div class="kpi-sub">Meta: ${fmt(acumMeta)}</div></div>
+      <div class="kpi"><div class="kpi-lbl">% Meta Acum.</div><div class="kpi-val" style="${clr(+pctAcum>=100)}">${pctAcum}%</div><div class="kpi-sub">${d.length} dias</div></div>
+      <div class="kpi"><div class="kpi-lbl">Margem Acum.</div><div class="kpi-val" style="${clr(acumMarg>0)}">${fmt(acumMarg)}</div><div class="kpi-sub">${acumVenda?((acumMarg/acumVenda)*100).toFixed(1):'0'}% da venda</div></div>
+    `;
+  }
+
+  // Tabela detalhada com acumulados
+  const tbody = document.getElementById('bDiario');
+  if(tbody) {
+    let acV=0, acM=0;
+    tbody.innerHTML = d.map(row => {
+      acV += +row.VLTOTAL||0;
+      acM += +row.META_DIA||0;
+      const ok = +row.VLTOTAL >= +row.META_DIA;
+      const pM = row.META_DIA ? ((+row.VLTOTAL/+row.META_DIA)*100).toFixed(1) : '—';
+      const pMg = row.VLTOTAL ? ((+row.MARGEM/+row.VLTOTAL)*100).toFixed(1) : '0';
+      const pAc = acM ? ((acV/acM)*100).toFixed(1) : '—';
+      const d2 = row.DIA.split('-');
+      return `<tr>
+        <td class="L tn">${d2[2]}/${d2[1]}/${d2[0]}</td>
+        <td class="tn" style="${clr(ok)}">${R(+row.VLTOTAL)}</td>
+        <td class="tn">${R(+row.META_DIA)}</td>
+        <td class="tn" style="${clr(ok)}">${pM}%</td>
+        <td class="tn" style="${clr(+row.MARGEM>0)}">${R(+row.MARGEM)}</td>
+        <td class="tn" style="${clr(+pMg>0)}">${pMg}%</td>
+        <td class="tn">${R(acV)}</td>
+        <td class="tn">${R(acM)}</td>
+        <td class="tn" style="${clr(+pAc>=100)}">${pAc}%</td>
+      </tr>`;
+    }).join('');
+  }
 
   // Cores: verde se >= meta, vermelho se abaixo
   const barColors = vals.map((v,i) =>
@@ -1341,7 +1428,7 @@ async function reloadAll(){
   document.getElementById('ts').textContent='Atualizando...';
   try{
     await Promise.all([
-      loadKPIs(), loadEvolucao(), loadDiario(), loadEquipePie(),
+      loadKPIs(), loadEvolucao(), loadEquipePie(),
       loadFornTop(), loadRcaTop(), loadGerSumm(), loadFornSumm(),
       initDrill(),
     ]);
