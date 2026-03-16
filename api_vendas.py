@@ -104,6 +104,7 @@ dim_rca_vendas AS (
     SELECT k.CODUSUR,
            MAX(k.CODGERENTE)    KEEP (DENSE_RANK LAST ORDER BY k.DTSAIDA) as CODGERENTE,
            MAX(k.CODSUPERVISOR) KEEP (DENSE_RANK LAST ORDER BY k.DTSAIDA) as CODSUPERVISOR,
+           MAX(k.SUPERV)        KEEP (DENSE_RANK LAST ORDER BY k.DTSAIDA) as SUPERV,
            SUM(k.QTVENDIDA * k.PRECOUNITCONT) as VLTOTAL,
            SUM(k.QTVENDIDA * k.CUSTOREAL)     as VLCUSTO
     FROM CSOUSA.K_VENDA k
@@ -232,7 +233,7 @@ def SQL_POR_SUPERVISOR(kvf, mi, mf, codgerente=None, equipe=None):
 WITH {base_ctes(kvf, mi, mf)}
 SELECT
     {ec}                                                                  as EQUIPE,
-    NVL(s.NOME,'Sem Supervisor')                                          as SUPERVISOR,
+    NVL(dv.SUPERV,'Sem Supervisor')                                       as SUPERVISOR,
     dv.CODSUPERVISOR,
     NVL(g.NOMEGERENTE,'Sem Gerente')                                      as GERENTE,
     ROUND(SUM(dv.VLTOTAL),2)                                              as VLTOTAL,
@@ -243,11 +244,10 @@ SELECT
     ROUND(NVL(SUM(mr.META_VALOR),0),2)                                    as META,
     ROUND(SUM(dv.VLTOTAL)/NULLIF(NVL(SUM(mr.META_VALOR),0),0)*100,1)     as PERC_META
 FROM dim_rca_vendas dv
-LEFT JOIN CSOUSA.PCUSUARI s  ON s.CODUSUR    = dv.CODSUPERVISOR
 LEFT JOIN CSOUSA.PCGERENTE g ON g.CODGERENTE = dv.CODGERENTE
 LEFT JOIN meta_rca mr        ON mr.CODUSUR   = dv.CODUSUR
 WHERE dv.CODSUPERVISOR IS NOT NULL {drill}
-GROUP BY {ec}, s.NOME, dv.CODSUPERVISOR, g.NOMEGERENTE
+GROUP BY {ec}, dv.SUPERV, dv.CODSUPERVISOR, g.NOMEGERENTE
 {eq_filter}
 ORDER BY VLTOTAL DESC
 """
@@ -272,7 +272,7 @@ SELECT
     u.NOME                                                                as RCA,
     {ec}                                                                  as EQUIPE,
     NVL(g.NOMEGERENTE,'Sem Gerente')                                      as GERENTE,
-    NVL(s.NOME,'Sem Supervisor')                                          as SUPERVISOR,
+    NVL(dv.SUPERV,'Sem Supervisor')                                       as SUPERVISOR,
     ROUND(dv.VLTOTAL,2)                                                   as VLTOTAL,
     ROUND(dv.VLCUSTO,2)                                                   as VLCUSTO,
     ROUND(dv.VLTOTAL - dv.VLCUSTO,2)                                      as MARGEM,
@@ -283,7 +283,6 @@ SELECT
 FROM dim_rca_vendas dv
 JOIN  CSOUSA.PCUSUARI u      ON u.CODUSUR      = dv.CODUSUR
 LEFT JOIN CSOUSA.PCGERENTE g ON g.CODGERENTE   = dv.CODGERENTE
-LEFT JOIN CSOUSA.PCUSUARI s  ON s.CODUSUR      = dv.CODSUPERVISOR
 LEFT JOIN pedidos_rca pr     ON pr.CODUSUR     = dv.CODUSUR
 LEFT JOIN meta_rca mr        ON mr.CODUSUR     = dv.CODUSUR
 WHERE 1=1 {dsup} {dger} {eq_filter}
@@ -344,7 +343,8 @@ def SQL_RCA_POR_FORNEC(kvf, codfornec):
 WITH dim_rca AS (
     SELECT k.CODUSUR,
            MAX(k.CODGERENTE)    KEEP (DENSE_RANK LAST ORDER BY k.DTSAIDA) as CODGERENTE,
-           MAX(k.CODSUPERVISOR) KEEP (DENSE_RANK LAST ORDER BY k.DTSAIDA) as CODSUPERVISOR
+           MAX(k.CODSUPERVISOR) KEEP (DENSE_RANK LAST ORDER BY k.DTSAIDA) as CODSUPERVISOR,
+           MAX(k.SUPERV)        KEEP (DENSE_RANK LAST ORDER BY k.DTSAIDA) as SUPERV
     FROM CSOUSA.K_VENDA k
     WHERE 1=1 {KV_BASE} {kvf}
     GROUP BY k.CODUSUR
@@ -354,16 +354,15 @@ SELECT
     u.NOME                                      as RCA,
     {ec}                                        as EQUIPE,
     NVL(g.NOMEGERENTE,'Sem Gerente')            as GERENTE,
-    NVL(s.NOME,'Sem Supervisor')                as SUPERVISOR,
+    NVL(dr.SUPERV,'Sem Supervisor')             as SUPERVISOR,
     ROUND(SUM(k.QTVENDIDA * k.PRECOUNITCONT),2) as VLTOTAL
 FROM CSOUSA.K_VENDA k
-JOIN  CSOUSA.PCUSUARI u    ON u.CODUSUR     = k.CODUSUR
-LEFT JOIN dim_rca dr       ON dr.CODUSUR    = k.CODUSUR
-LEFT JOIN CSOUSA.PCGERENTE g ON g.CODGERENTE = dr.CODGERENTE
-LEFT JOIN CSOUSA.PCUSUARI s  ON s.CODUSUR    = dr.CODSUPERVISOR
+JOIN  CSOUSA.PCUSUARI u      ON u.CODUSUR     = k.CODUSUR
+LEFT JOIN dim_rca dr         ON dr.CODUSUR    = k.CODUSUR
+LEFT JOIN CSOUSA.PCGERENTE g ON g.CODGERENTE  = dr.CODGERENTE
 WHERE k.CODFORNEC = {codfornec}
 {KV_BASE} {kvf}
-GROUP BY u.CODUSUR, u.NOME, {ec}, g.NOMEGERENTE, s.NOME
+GROUP BY u.CODUSUR, u.NOME, {ec}, g.NOMEGERENTE, dr.SUPERV
 ORDER BY VLTOTAL DESC
 FETCH FIRST 50 ROWS ONLY
 """
