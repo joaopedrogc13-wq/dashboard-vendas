@@ -459,7 +459,21 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(err)
 
 
+class ThreadedHTTPServer(HTTPServer):
+    def process_request(self, request, client_address):
+        t = threading.Thread(target=self._handle, args=(request, client_address), daemon=True)
+        t.start()
+
+    def _handle(self, request, client_address):
+        try:
+            self.finish_request(request, client_address)
+        except Exception:
+            self.handle_error(request, client_address)
+        finally:
+            self.shutdown_request(request)
+
+
 if __name__ == '__main__':
     PORT = 8742
     print(f'[API Vendas C&S] http://localhost:{PORT}')
-    HTTPServer(('localhost', PORT), Handler).serve_forever()
+    ThreadedHTTPServer(('localhost', PORT), Handler).serve_forever()

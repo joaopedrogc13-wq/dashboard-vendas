@@ -2,7 +2,7 @@
 # ─────────────────────────────────────────────────────────────
 #  start.sh — Inicia API + Túnel Cloudflare e atualiza GitHub
 # ─────────────────────────────────────────────────────────────
-set -e
+set +e
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 # Defina GITHUB_TOKEN no ambiente antes de rodar (ex: export GITHUB_TOKEN=seu_token)
@@ -14,15 +14,17 @@ LOG="$SCRIPT_DIR/tunnel.log"
 echo "[$(date '+%H:%M:%S')] Iniciando API de Vendas..."
 pkill -f "api_vendas.py" 2>/dev/null || true
 sleep 1
-python3 "$SCRIPT_DIR/api_vendas.py" &
+nohup python3 "$SCRIPT_DIR/api_vendas.py" < /dev/null >> "$SCRIPT_DIR/api.log" 2>&1 &
 API_PID=$!
+disown $API_PID 2>/dev/null || true
 echo "[$(date '+%H:%M:%S')] API iniciada (PID $API_PID)"
 
 echo "[$(date '+%H:%M:%S')] Iniciando túnel Cloudflare..."
 pkill -f "cloudflared tunnel" 2>/dev/null || true
 sleep 1
-cloudflared tunnel --url http://localhost:8742 --no-autoupdate 2>"$LOG" &
+nohup cloudflared tunnel --url http://localhost:8742 --no-autoupdate --protocol http2 < /dev/null > "$LOG" 2>&1 &
 CF_PID=$!
+disown $CF_PID 2>/dev/null || true
 echo "[$(date '+%H:%M:%S')] Aguardando URL do túnel..."
 
 # Aguarda até 30s pela URL
@@ -51,6 +53,14 @@ git add dashboard_vendas.html
 git commit -m "chore: atualiza URL do túnel Cloudflare ($TUNNEL_URL)" \
     --author="G4 OS <g4os@g4business.com>" 2>/dev/null || echo "(sem mudanças no git)"
 git push "https://${TOKEN}@github.com/${REPO}.git" main 2>/dev/null
+
+# Aquece cache via túnel em paralelo
+echo "[$(date '+%H:%M:%S')] Aquecendo cache via túnel..."
+for ep in resumo por-equipe por-gerente por-supervisor por-rca evolucao fornec-por-equipe; do
+    curl -s -o /dev/null --max-time 120 "$TUNNEL_URL/api/$ep" &
+done
+wait
+echo "[$(date '+%H:%M:%S')] Cache aquecido!"
 
 echo ""
 echo "✅ Tudo pronto!"
