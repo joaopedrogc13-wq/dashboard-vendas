@@ -444,7 +444,9 @@ tr:hover td{background:rgba(200,16,46,.04)}
 /* ═══════════════════════════════════════════════════════
    CONFIG & STATE
 ═══════════════════════════════════════════════════════ */
-const API = 'http://localhost:8742';
+const API = (location.hostname === 'localhost' || location.hostname === '127.0.0.1' || location.protocol === 'file:')
+  ? 'http://localhost:8742'
+  : 'https://gzip-marked-wearing-stands.trycloudflare.com';
 let _charts = {};
 let _cache  = {};
 // Drill state: stack de níveis
