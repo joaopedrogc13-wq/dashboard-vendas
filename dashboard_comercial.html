@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard Comercial — Cabral &amp; Sousa</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg:#0f1117; --card:#1a1d27; --border:#2a2d3e;
+    --accent:#4f6ef7; --accent2:#34d399; --accent3:#f97316; --accent4:#a78bfa;
+    --danger:#f43f5e; --text:#e2e8f0; --muted:#94a3b8; --green:#10b981; --red:#ef4444;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px}
+
+  /* HEADER */
+  header{background:linear-gradient(135deg,#1e2240,#141728);border-bottom:1px solid var(--border);padding:16px 28px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px}
+  .logo-area{display:flex;align-items:center;gap:12px}
+  .logo-circle{width:44px;height:44px;border-radius:10px;background:linear-gradient(135deg,#4f6ef7,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:#fff}
+  .logo-text h1{font-size:17px;font-weight:700;color:#fff}
+  .logo-text p{font-size:11px;color:var(--muted);margin-top:2px}
+  .header-right{text-align:right}
+  .period-badge{display:inline-block;background:rgba(79,110,247,.15);border:1px solid rgba(79,110,247,.4);color:#818cf8;border-radius:20px;padding:3px 12px;font-size:11px;font-weight:600}
+  .last-update{font-size:10px;color:var(--muted);margin-top:5px}
+
+  /* FILTER BAR */
+  .filter-bar{background:#141728;border-bottom:1px solid var(--border);padding:10px 28px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .filter-label{font-size:11px;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-right:4px}
+  .filter-btn{background:rgba(255,255,255,.05);border:1px solid var(--border);color:var(--muted);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;transition:all .2s;white-space:nowrap}
+  .filter-btn:hover{background:rgba(79,110,247,.15);border-color:rgba(79,110,247,.5);color:#818cf8}
+  .filter-btn.active{background:rgba(79,110,247,.2);border-color:#4f6ef7;color:#818cf8}
+  .filter-btn.active.m0{background:rgba(79,110,247,.2);border-color:#4f6ef7;color:#818cf8}
+  .filter-btn.active.m1{background:rgba(52,211,153,.15);border-color:#34d399;color:#34d399}
+  .filter-btn.active.m2{background:rgba(249,115,22,.15);border-color:#f97316;color:#f97316}
+  .filter-btn.active.m3{background:rgba(167,139,250,.15);border-color:#a78bfa;color:#a78bfa}
+  .filter-btn.active.m4{background:rgba(6,182,212,.15);border-color:#06b6d4;color:#06b6d4}
+
+  /* LAYOUT */
+  main{padding:20px 28px;max-width:1600px;margin:0 auto}
+
+  /* KPI GRID */
+  .kpi-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:12px;margin-bottom:20px}
+  @media(max-width:1400px){.kpi-grid{grid-template-columns:repeat(4,1fr)}}
+  @media(max-width:900px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+  .kpi-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 18px;position:relative;overflow:hidden;transition:transform .2s}
+  .kpi-card:hover{transform:translateY(-1px)}
+  .kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:var(--accent)}
+  .kpi-card.green::before{background:var(--accent2)}
+  .kpi-card.orange::before{background:var(--accent3)}
+  .kpi-card.purple::before{background:var(--accent4)}
+  .kpi-card.red::before{background:var(--danger)}
+  .kpi-card.teal::before{background:#06b6d4}
+  .kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px;font-weight:600}
+  .kpi-value{font-size:21px;font-weight:700;margin-top:7px;color:#fff;line-height:1;transition:all .3s}
+  .kpi-sub{font-size:11px;color:var(--muted);margin-top:5px}
+  .kpi-icon{position:absolute;top:14px;right:14px;font-size:20px;opacity:.15}
+
+  /* CHARTS */
+  .charts-row{display:grid;gap:14px;margin-bottom:14px}
+  .row-2col{grid-template-columns:1fr 1fr}
+  @media(max-width:900px){.row-2col{grid-template-columns:1fr}}
+  .chart-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px 20px}
+  .chart-title{font-size:13px;font-weight:600;color:#fff;margin-bottom:3px;display:flex;align-items:center;gap:8px}
+  .chart-title .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+  .chart-sub{font-size:10px;color:var(--muted);margin-bottom:14px}
+  canvas{max-width:100%}
+
+  /* TABLE */
+  .table-wrapper{overflow-x:auto;margin-top:8px}
+  table{width:100%;border-collapse:collapse}
+  thead th{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted);padding:7px 8px;border-bottom:1px solid var(--border);text-align:left;white-space:nowrap}
+  tbody tr{border-bottom:1px solid rgba(255,255,255,.04);transition:background .15s}
+  tbody tr:hover{background:rgba(255,255,255,.03)}
+  tbody td{padding:8px 8px;font-size:12px}
+  .rank{color:var(--muted);font-weight:600;font-size:11px}
+  .name-cell{font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .money{font-variant-numeric:tabular-nums;text-align:right}
+  .pct{text-align:right;font-weight:600}
+  .pct.pos{color:var(--green)} .pct.neg{color:var(--red)}
+  .bar-bg{background:rgba(255,255,255,.07);border-radius:3px;height:4px;min-width:50px;margin-top:3px}
+  .bar-fill{height:100%;border-radius:3px;background:var(--accent);transition:width .4s}
+
+  /* FOOTER */
+  footer{text-align:center;padding:18px;font-size:10px;color:var(--muted);border-top:1px solid var(--border);margin-top:6px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-area">
+    <div class="logo-circle">C&amp;S</div>
+    <div class="logo-text">
+      <h1>Dashboard Comercial</h1>
+      <p>Cabral &amp; Sousa · Winthor</p>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="period-badge" id="periodBadge">📅 Dez/2025 → Mar/2026 (parcial)</div>
+    <div class="last-update">Atualizado em 21/03/2026 · Rotina 111 exata · Query: SELECT * FROM TABLE(FUNC_RESUMOFATURAMENTO(NULL, TO_DATE('01/MM/YYYY'), TO_DATE('31/MM/YYYY'), TIPO, '0','1','1','0','0','0','1', …, 'N','0')) · P_BONIFICACAO=1, P_DEVOLUCAO=1, P_LUCRO_LIQ=1 · PERCLUCRO=(VLVENDA−VLCUSTOFIN)/VLVENDA (VLDEVOLUCAO=0 por segmento) · VLLUCRO/VLLIQUIDO idênticos</div>
+  </div>
+</header>
+
+<!-- FILTER BAR -->
+<div class="filter-bar">
+  <span class="filter-label">Filtrar por mês:</span>
+  <button class="filter-btn active m0" data-m="all"  onclick="setFilter('all',0)">📊 Todos os meses</button>
+  <button class="filter-btn m1"        data-m="12/2025" onclick="setFilter('12/2025',1)">Dez/2025</button>
+  <button class="filter-btn m2"        data-m="01/2026" onclick="setFilter('01/2026',2)">Jan/2026</button>
+  <button class="filter-btn m3"        data-m="02/2026" onclick="setFilter('02/2026',3)">Fev/2026</button>
+  <button class="filter-btn m4"        data-m="03/2026" onclick="setFilter('03/2026',4)">Mar/2026 ⚠️ parcial</button>
+</div>
+
+<main>
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi-card"><div class="kpi-icon">📦</div>
+      <div class="kpi-label">Faturamento Bruto</div>
+      <div class="kpi-value" id="k-fat-bruto">R$ 299,4M</div>
+      <div class="kpi-sub" id="k-fat-bruto-sub">4 meses consolidados</div>
+    </div>
+    <div class="kpi-card green"><div class="kpi-icon">✅</div>
+      <div class="kpi-label">Fat. Líquido (VLLIQUIDO)</div>
+      <div class="kpi-value" id="k-fat-liq">R$ 289,4M</div>
+      <div class="kpi-sub" id="k-fat-liq-sub">VLLIQUIDO Rotina 111 · fatBruto − dev(PCNFENT)</div>
+    </div>
+    <div class="kpi-card red"><div class="kpi-icon">↩️</div>
+      <div class="kpi-label">Dev. Líquida (PCNFENT)</div>
+      <div class="kpi-value" id="k-dev">R$ 6,84M</div>
+      <div class="kpi-sub" id="k-dev-sub">2,31% do fat. bruto · via PCNFENT/PCESTCOM</div>
+    </div>
+    <div class="kpi-card" style="--accent:#f59e0b"><div class="kpi-icon">🧾</div>
+      <div class="kpi-label">Deduções Fiscais</div>
+      <div class="kpi-value" id="k-ded">R$ 0,00M</div>
+      <div class="kpi-sub" id="k-ded-sub">Rotina 111 não deduz impostos do fat. líquido</div>
+    </div>
+    <div class="kpi-card orange"><div class="kpi-icon">🏷️</div>
+      <div class="kpi-label">CMV (S + Bonif.)</div>
+      <div class="kpi-value" id="k-cmv">R$ 270,43M</div>
+      <div class="kpi-sub" id="k-cmv-sub">incl. bonificações (SB) · P_BONIFICACAO=1</div>
+    </div>
+    <div class="kpi-card purple"><div class="kpi-icon">💰</div>
+      <div class="kpi-label">Margem R$</div>
+      <div class="kpi-value" id="k-marg-rs">R$ 24,53M</div>
+      <div class="kpi-sub" id="k-marg-rs-sub">fat.líq − CMV + CMV devol. recup.</div>
+    </div>
+    <div class="kpi-card teal"><div class="kpi-icon">📊</div>
+      <div class="kpi-label">Margem %</div>
+      <div class="kpi-value" id="k-marg-pct">8,47 %</div>
+      <div class="kpi-sub" id="k-marg-pct-sub">média ponderada</div>
+    </div>
+  </div>
+
+  <!-- Trend -->
+  <div class="charts-row" style="grid-template-columns:1fr;margin-bottom:14px">
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot"></span> Evolução Mensal — Faturamento &amp; Margem</div>
+      <div class="chart-sub">Fat. bruto, líquido e % margem · Barra destacada = mês selecionado · Mar/2026 = parcial (até dia 20)</div>
+      <canvas id="trendChart" height="85"></canvas>
+    </div>
+  </div>
+
+  <!-- Depto + Filial -->
+  <div class="charts-row row-2col">
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:#34d399"></span> Faturamento por Departamento</div>
+      <div class="chart-sub" id="sub-depto">Top 10 departamentos · todos os meses</div>
+      <canvas id="deptoChart" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:#f97316"></span> Faturamento por Filial</div>
+      <div class="chart-sub" id="sub-filial">Fat. bruto e % margem por filial</div>
+      <canvas id="filialChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Diretorias -->
+  <div class="charts-row row-2col" style="margin-top:14px">
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:#fbbf24"></span> Faturamento por Diretoria</div>
+      <div class="chart-sub" id="sub-dir">Fat. bruto e % margem por diretoria · todos os meses</div>
+      <canvas id="dirChart" height="200"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:#06b6d4"></span> Evolução das Diretorias</div>
+      <div class="chart-sub">Fat. bruto mensal por diretoria (R$M)</div>
+      <canvas id="dirEvolChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- Diretoria table -->
+  <div class="charts-row" style="grid-template-columns:1fr;margin-top:14px">
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:#fbbf24"></span> Resumo por Diretoria</div>
+      <div class="chart-sub" id="sub-dir-tbl">Faturamento, CMV e Margem por Diretoria · todos os meses</div>
+      <div class="table-wrapper"><table id="dirTable"></table></div>
+    </div>
+  </div>
+
+  <!-- Vendedores -->
+  <div class="charts-row" style="grid-template-columns:1fr;margin-top:14px">
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:#a78bfa"></span> Ranking de Vendedores</div>
+      <div class="chart-sub" id="sub-vend">Top 10 por faturamento bruto</div>
+      <div class="table-wrapper"><table id="vendTable"></table></div>
+    </div>
+  </div>
+
+  <!-- Clientes -->
+  <div class="charts-row" style="grid-template-columns:1fr;margin-top:14px">
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:#06b6d4"></span> Top 10 Clientes</div>
+      <div class="chart-sub" id="sub-cli">Por faturamento bruto</div>
+      <div class="table-wrapper"><table id="cliTable"></table></div>
+    </div>
+  </div>
+
+  <!-- Fornecedores -->
+  <div class="charts-row row-2col" style="margin-top:14px">
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:#f43f5e"></span> Faturamento por Fornecedor</div>
+      <div class="chart-sub" id="sub-fornec-chart">Top 12 fornecedores · todos os meses · fonte: PCMOV→PCPRODUT→PCFORNEC</div>
+      <canvas id="fornecChart" height="250"></canvas>
+    </div>
+    <div class="chart-card">
+      <div class="chart-title"><span class="dot" style="background:#f43f5e"></span> Ranking de Fornecedores</div>
+      <div class="chart-sub" id="sub-fornec-tbl">Top 12 · Mg. Bruta = (Fat.Bruto − CMV) / Fat.Bruto (sem deduções fiscais)</div>
+      <div class="table-wrapper"><table id="fornecTable"></table></div>
+    </div>
+  </div>
+</main>
+
+<footer>Dashboard Comercial · Dados: Oracle Winthor — schema CSOUSA · Período: Dez/2025 – Mar/2026 · Gerado em 20/03/2026</footer>
+
+<script>
+/* ══════════════════════════ DATA ══════════════════════════ */
+
+/* ── Mapeamento PCMOV → Rotina 111 (P_BONIFICACAO=1, TIPOCONSULTA=21) ─────────
+   fatBruto  = SUM(PUNIT*QT)            [S/ST/SM, DTCANCEL IS NULL]
+               JOIN PCNFSAID ON NUMTRANSVENDA:
+               NVL(CONDVENDA,-1) IN (1,5,-1,7,9,11,14) ← exclui CONDVENDA=4
+               CODFISCAL NOT IN (522,622,722,532,632,732)
+   dev       = SUM(E.PUNIT*E.QT)        [PCNFENT+PCESTCOM, CODOPER='ED'
+               TIPODESCARGA IN ('6','7','T'), CODFISCAL IN (131,132,231,232,199,299)
+               DTCANCEL IS NULL, NUMTRANSVENDA<>0]  ← VLDEVOLUCAO Rotina 111
+               NÃO usa CODOPER='SR' de PCMOV (metodologia diferente da Rotina 111)
+   fatLiq    = fatBruto - dev           ← VLLIQUIDO da Rotina 111 (sem deduções fiscais)
+   cmv       = SUM(CUSTOFIN*QT)         [S+ST+SM+SB, mesmos filtros CONDVENDA]  ← P_BONIFICACAO=1
+   cmvDev    = SUM(E.CUSTOFIN*E.QT)     [PCNFENT, mesmos filtros de dev acima]
+   margemRS  = fatLiq - cmv + cmvDev
+   margemPct = margemRS / fatLiq * 100
+   ded       = 0 (Rotina 111 NÃO deduz PIS/COFINS/ICMS do fat líquido)
+   Corrigido em 20/03/2026: devoluções migradas de SR→PCNFENT/PCESTCOM (Rotina 111 exata) */
+const kpi = {
+  all:      {fatBruto:296.26, fatLiq:289.42, dev:6.84, ded:0, cmv:270.43, cmvSB:5.16, cmvDev:5.54, margemRS:24.53, margemPct:8.47},
+  '12/2025':{fatBruto:79.87,  fatLiq:77.52,  dev:2.35, ded:0, cmv:71.82,  cmvSB:2.13, cmvDev:1.72, margemRS:7.42,  margemPct:9.57},
+  '01/2026':{fatBruto:83.38,  fatLiq:81.53,  dev:1.85, ded:0, cmv:74.67,  cmvSB:1.32, cmvDev:1.72, margemRS:8.58,  margemPct:10.52},
+  '02/2026':{fatBruto:88.74,  fatLiq:87.33,  dev:1.41, ded:0, cmv:80.47,  cmvSB:1.12, cmvDev:1.18, margemRS:8.04,  margemPct:9.20},
+  '03/2026':{fatBruto:44.27,  fatLiq:43.04,  dev:1.23, ded:0, cmv:43.47,  cmvSB:0.59, cmvDev:0.92, margemRS:0.49,  margemPct:1.14},
+};
+
+/* Monthly trend */
+const MESES   = ['Dez/2025','Jan/2026','Fev/2026','Mar/2026*'];
+const FAT_B   = [78.36,83.39,88.61,52.26];  /* Atualizado: PCPEDC VLTOTAL CONDVENDA=1 POSICAO=F até 24/03/2026 */
+const FAT_L   = [76.01,80.89,85.95,50.69];  /* estimativa FAT_B × 0.97 */
+const MARG_P  = [13.58,13.8,11.65,9.18];  /* margem=(PVENDA−VLCUSTOFIN)/PVENDA via PCPEDI */
+
+/* Departamentos top-10 por mês — PERCLUCRO=(VLVENDA-VLCUSTOFIN)/VLVENDA via FUNC_RESUMOFATURAMENTO TIPO=17 · Rotina 111 exata */
+const deptos = {
+  'all':{labels:['Bebidas','Chocolates','Gomas','Doces','Biscoito','Pb','Alimentos','Candies','Elma Chips','Bauducco'],
+             fat:   [140.77,42.92,26.68,19.86,11.36,10.76,9.2,6.34,5.55,4.83],
+             marg:  [9.29,6.54,14.32,11.43,11.58,10.67,16.68,6.13,25.23,13.28]},
+  '12/2025':{labels:['Bebidas','Chocolates','Gomas','Doces','Pb','Biscoito','Alimentos','Elma Chips','Candies','Quero'],
+             fat:   [40.68,10.71,6.47,4.8,2.95,2.51,2.36,1.43,1.34,0.55],
+             marg:  [14.01,1.63,14.95,13.78,6.73,11.46,16.64,25.8,4.52,12.48]},
+  '01/2026':{labels:['Bebidas','Chocolates','Gomas','Doces','Biscoito','Alimentos','Candies','Pb','Elma Chips','Bauducco'],
+             fat:   [39.26,10.15,7.2,5.44,3.49,2.59,2.15,1.71,1.64,1.53],
+             marg:  [10.21,9.01,14.25,10.92,11.96,16.42,8.37,21.81,23.61,13.1]},
+  '02/2026':{labels:['Bebidas','Chocolates','Gomas','Doces','Pb','Biscoito','Alimentos','Candies','Bauducco','Elma Chips'],
+             fat:   [43.11,12.52,7.84,4.45,4.18,3.12,2.45,1.84,1.57,1.42],
+             marg:  [8.4,7.93,13.55,11.91,12.46,10.67,18.26,5.34,11.84,26.55]},
+  '03/2026':{labels:['Bebidas','Chocolates','Doces','Gomas','Biscoito','Pb','Alimentos','Bauducco','Elma Chips','Candies'],
+             fat:   [17.73,9.55,5.17,5.16,2.24,1.92,1.8,1.73,1.06,1.01],
+             marg:  [-1.45,7.59,9.37,14.79,12.37,2.9,14.98,14.73,25.21,4.92]},
+};
+
+/* Filiais por mês — PERCLUCRO=(VLVENDA-VLCUSTOFIN)/VLVENDA via FUNC_RESUMOFATURAMENTO TIPO=20 por filial · Rotina 111 exata */
+const filiais = {
+  'all':{labels:['Cabral & Sousa','CMA Distribuidora','Bahia Fort'],
+             fat:   [294.33,5.44,2.26], marg:[11.84,10.37,8.79]},
+  '12/2025':{labels:['Cabral & Sousa','Bahia Fort'],
+             fat:   [77.38,0.62], marg:[13.26,6.87]},
+  '01/2026':{labels:['Cabral & Sousa','CMA Distribuidora','Bahia Fort'],
+             fat:   [80.97,1.83,0.58], marg:[13.77,10.41,9.44]},
+  '02/2026':{labels:['Cabral & Sousa','CMA Distribuidora','Bahia Fort'],
+             fat:   [86.07,1.75,0.54], marg:[11.53,10.18,9.38]},
+  '03/2026':{labels:['Cabral & Sousa','CMA Distribuidora','Bahia Fort'],
+             fat:   [49.91,1.85,0.52], marg:[8.8,10.51,9.45]},
+};
+
+/* Vendedores top-10 por mês — PERCLUCRO=(VLVENDA-VLCUSTOFIN)/VLVENDA via FUNC_RESUMOFATURAMENTO TIPO=22 · Rotina 111 exata */
+const tipoL = {R:'RCA',E:'Externo',I:'Interno'};
+const vendedores = {
+  all:[
+    {n:'RCA BRUNO BH',t:'I',fat:77.79,cli:9,m:-1.74},
+    {n:'LOURILSON CABRAL SANTOS',t:'E',fat:24.07,cli:16,m:1.47},
+    {n:'RCA ASSIS - SP',t:'R',fat:11.36,cli:6,m:4.1},
+    {n:'OSVALDO NERI LIMA',t:'E',fat:10.41,cli:16,m:14.67},
+    {n:'RCA MASTER',t:'R',fat:10.03,cli:13,m:-8.52},
+    {n:'RCA VIANA - SP',t:'R',fat:4.28,cli:2,m:-8.03},
+    {n:'AUTO ATENDIMENTO',t:'I',fat:3.41,cli:507,m:18.14},
+    {n:'SHEILA PATRICIA L.B.SALES',t:'R',fat:3.11,cli:31,m:22.31},
+    {n:'FABIO SOARES DOS SANTOS',t:'R',fat:2.34,cli:20,m:6.96},
+    {n:'CRISTINA REIS SANTOS',t:'R',fat:1.45,cli:0,m:6.73},
+  ],
+  '12/2025':[
+    {n:'RCA BRUNO BH',t:'I',fat:20.47,cli:6,m:-0.86},
+    {n:'RCA ASSIS - SP',t:'R',fat:5.35,cli:5,m:10.29},
+    {n:'LOURILSON CABRAL SANTOS',t:'E',fat:4.31,cli:10,m:9.43},
+    {n:'OSVALDO NERI LIMA',t:'E',fat:3.24,cli:12,m:20.4},
+    {n:'RCA VIANA - SP',t:'R',fat:2.31,cli:2,m:-6.06},
+    {n:'RCA MASTER',t:'R',fat:2.25,cli:8,m:-8.14},
+    {n:'AUTO ATENDIMENTO',t:'I',fat:1.54,cli:287,m:18.94},
+    {n:'SHEILA PATRICIA L.B.SALES',t:'R',fat:1.24,cli:14,m:30.14},
+    {n:'ANTONIO DELFINO NETO',t:'R',fat:0.99,cli:47,m:43.11},
+    {n:'MARIA VANUZA - SUP',t:'R',fat:0.9,cli:40,m:23.28},
+  ],
+  '01/2026':[
+    {n:'RCA BRUNO BH',t:'I',fat:23.49,cli:8,m:3.85},
+    {n:'LOURILSON CABRAL SANTOS',t:'E',fat:5.14,cli:8,m:0.67},
+    {n:'OSVALDO NERI LIMA',t:'E',fat:3.12,cli:11,m:20.09},
+    {n:'RCA MASTER',t:'R',fat:2.15,cli:8,m:-14.75},
+    {n:'RCA ASSIS - SP',t:'R',fat:2.03,cli:3,m:9.77},
+    {n:'RCA VIANA - SP',t:'R',fat:1.97,cli:2,m:-10.0},
+    {n:'FABIO SOARES DOS SANTOS',t:'R',fat:1.21,cli:2,m:6.44},
+    {n:'AUTO ATENDIMENTO',t:'I',fat:0.87,cli:194,m:17.31},
+    {n:'JULIANA SOUZA SANTANA',t:'R',fat:0.85,cli:21,m:14.86},
+    {n:'ANTONIO AUGUSTO DE ARAUJO',t:'R',fat:0.76,cli:37,m:12.14},
+  ],
+  '02/2026':[
+    {n:'RCA BRUNO BH',t:'I',fat:24.13,cli:7,m:-0.72},
+    {n:'LOURILSON CABRAL SANTOS',t:'E',fat:9.72,cli:6,m:6.41},
+    {n:'RCA MASTER',t:'R',fat:3.84,cli:6,m:-4.88},
+    {n:'OSVALDO NERI LIMA',t:'E',fat:3.14,cli:11,m:9.79},
+    {n:'RCA ASSIS - SP',t:'R',fat:2.38,cli:3,m:-1.05},
+    {n:'SHEILA PATRICIA L.B.SALES',t:'R',fat:1.87,cli:13,m:14.48},
+    {n:'CRISTINA REIS SANTOS',t:'R',fat:1.45,cli:16,m:6.73},
+    {n:'ISABELA SILVA DE JESUS - GER.',t:'R',fat:1.27,cli:18,m:14.15},
+    {n:'MARLO JORGE VIDAL CHASTINET',t:'R',fat:1.2,cli:30,m:10.51},
+    {n:'FABIO SOARES DOS SANTOS',t:'R',fat:1.13,cli:19,m:7.49},
+  ],
+  '03/2026':[
+    {n:'RCA BRUNO BH',t:'I',fat:9.7,cli:6,m:-9.22},
+    {n:'LOURILSON CABRAL SANTOS',t:'E',fat:4.9,cli:4,m:-10.61},
+    {n:'RCA MASTER',t:'R',fat:1.79,cli:7,m:-6.32},
+    {n:'RCA ASSIS - SP',t:'R',fat:1.6,cli:2,m:-2.62},
+    {n:'ISABELA SILVA - SUP',t:'R',fat:1.35,cli:2,m:10.51},
+    {n:'AUTO ATENDIMENTO',t:'I',fat:1.0,cli:249,m:18.18},
+    {n:'OSVALDO NERI LIMA',t:'E',fat:0.91,cli:8,m:8.42},
+    {n:'ISABELA SILVA - GERENTE',t:'R',fat:0.91,cli:20,m:14.25},
+    {n:'LAFAETE D.O.DANTAS - SUP',t:'R',fat:0.69,cli:10,m:10.75},
+    {n:'IVANA SILVA CANARIO',t:'R',fat:0.52,cli:6,m:8.75},
+  ],
+};
+
+/* Clientes top-10 por mês */
+const clientes = {
+  all:[
+    {n:'COMERCIAL ATACADAO ZARATTINI',fat:40.49,m:-3.26},
+    {n:'J MACEDO DISTRIBUIDORA',fat:31.2,m:-4.32},
+    {n:'MIDAS COMERCIAL DISTRIBUIDORA',fat:14.72,m:13.51},
+    {n:'NOVO MIX ATACADO DE ALIMENTOS',fat:12.96,m:11.8},
+    {n:'CONSUMIDOR NFC-E',fat:6.68,m:3.61},
+    {n:'GVM DISTRIBUIDORA',fat:5.04,m:-5.05},
+    {n:'COMERCIAL DE ALIMENTOS GILMAR',fat:4.59,m:21.2},
+    {n:'MISTER PUB EMPÓRIO E DISTRIBUIDORA',fat:4.39,m:4.8},
+    {n:'KS TWO COMERCIAL E DISTRIBUIDORA',fat:3.12,m:-10.68},
+    {n:'ALLPETS FOOD DISTRIBUIDORA',fat:3.04,m:-13.85},
+  ],
+  '12/2025':[
+    {n:'J MACEDO DISTRIBUIDORA',fat:8.67,m:-5.72},
+    {n:'COMERCIAL ATACADAO ZARATTINI',fat:7.1,m:2.43},
+    {n:'GVM DISTRIBUIDORA',fat:5.04,m:-5.05},
+    {n:'NOVO MIX ATACADO DE ALIMENTOS',fat:3.56,m:15.55},
+    {n:'MIDAS COMERCIAL DISTRIBUIDORA',fat:3.12,m:23.8},
+    {n:'OI DISTRIBUIDORA E ATACADISTA',fat:2.25,m:25.03},
+    {n:'MASTERMIX DISTRIBUIDORA',fat:2.14,m:-2.54},
+    {n:'CONSUMIDOR NFC-E',fat:1.88,m:8.46},
+    {n:'KS TWO COMERCIAL E DISTRIBUIDORA',fat:1.69,m:-8.44},
+    {n:'COMERCIAL DE ALIMENTOS GILMAR',fat:1.31,m:30.58},
+  ],
+  '01/2026':[
+    {n:'COMERCIAL ATACADAO ZARATTINI',fat:14.35,m:0.03},
+    {n:'J MACEDO DISTRIBUIDORA',fat:6.62,m:-3.23},
+    {n:'MIDAS COMERCIAL DISTRIBUIDORA',fat:4.05,m:24.72},
+    {n:'NOVO MIX ATACADO DE ALIMENTOS',fat:3.41,m:15.44},
+    {n:'CONSUMIDOR NFC-E',fat:2.75,m:-12.11},
+    {n:'KS TWO COMERCIAL E DISTRIBUIDORA',fat:1.43,m:-12.93},
+    {n:'GIRO ATACADO DISTRIBUIDOR',fat:1.33,m:4.96},
+    {n:'MISTER PUB EMPÓRIO E DISTRIBUIDORA',fat:1.32,m:15.2},
+    {n:'RMIX COMERCIO DE GENEROS',fat:1.23,m:9.73},
+    {n:'COMERCIAL DE ALIMENTOS GILMAR',fat:1.22,m:18.3},
+  ],
+  '02/2026':[
+    {n:'COMERCIAL ATACADAO ZARATTINI',fat:15.09,m:-4.24},
+    {n:'J MACEDO DISTRIBUIDORA',fat:9.26,m:-5.36},
+    {n:'MIDAS COMERCIAL DISTRIBUIDORA',fat:5.65,m:22.45},
+    {n:'NOVO MIX ATACADO DE ALIMENTOS',fat:3.6,m:9.31},
+    {n:'MISTER PUB EMPÓRIO E DISTRIBUIDORA',fat:3.07,m:-5.6},
+    {n:'ALLPETS FOOD DISTRIBUIDORA',fat:2.41,m:-11.67},
+    {n:'RIO VERDE DISTRIBUIDORA',fat:1.6,m:20.31},
+    {n:'COMERCIAL DE ALIMENTOS GILMAR',fat:1.46,m:28.43},
+    {n:'CVLB BRASIL SA',fat:1.45,m:8.0},
+    {n:'CONSUMIDOR NFC-E',fat:1.22,m:1.79},
+  ],
+  '03/2026':[
+    {n:'J MACEDO DISTRIBUIDORA',fat:6.65,m:-2.98},
+    {n:'COMERCIAL ATACADAO ZARATTINI',fat:3.95,m:-11.27},
+    {n:'NOVO MIX ATACADO DE ALIMENTOS',fat:2.39,m:6.89},
+    {n:'MIDAS COMERCIAL DISTRIBUIDORA',fat:1.9,m:-16.93},
+    {n:'RIO VERDE DISTRIBUIDORA',fat:1.06,m:-22.87},
+    {n:'MASTERMIX DISTRIBUIDORA',fat:0.85,m:-7.07},
+    {n:'CONSUMIDOR NFC-E',fat:0.83,m:16.29},
+    {n:'ALLPETS FOOD DISTRIBUIDORA',fat:0.63,m:-16.03},
+    {n:'COMERCIAL DE SECOS E MOLHADOS CE',fat:0.62,m:3.98},
+    {n:'COMERCIAL DE ALIMENTOS GILMAR',fat:0.6,m:7.48},
+  ],
+};
+
+/* Fornecedores top-12 por mês · PCMOV→PCPRODUT→PCFORNEC · mg=(fat-cmv)/fat (Mg.Bruta, sem deduções fiscais) */
+const fornecedores = {
+  all: [
+    {n:'Mondelez Brasil',fat:99.41,cmv:89.82,mg:9.65},
+    {n:'Pernod Ricard Brasil',fat:73.62,cmv:70.65,mg:4.03},
+    {n:'Red Bull do Brasil',fat:44.66,cmv:36.22,mg:18.89},
+    {n:'VCT Brasil',fat:16.32,cmv:15.11,mg:7.37},
+    {n:'PepsiCo do Brasil',fat:9.81,cmv:8.14,mg:17.01},
+    {n:'Ferrero do Brasil',fat:6.09,cmv:5.6,mg:8.13},
+    {n:'Masterfoods Brasil',fat:5.89,cmv:5.18,mg:12.05},
+    {n:'Nissin Foods',fat:4.86,cmv:3.9,mg:19.81},
+    {n:'Arcor do Brasil',fat:3.8,cmv:3.36,mg:11.44},
+    {n:'Bauducco',fat:3.66,cmv:3.17,mg:13.58},
+    {n:'J Macedo S/A',fat:2.32,cmv:2.11,mg:8.95},
+    {n:'Heinz Brasil',fat:2.11,cmv:1.89,mg:10.43},
+  ],
+  '12/2025': [
+    {n:'Mondelez Brasil',fat:25.5,cmv:23.41,mg:8.2},
+    {n:'Pernod Ricard Brasil',fat:24.05,cmv:21.61,mg:10.15},
+    {n:'Red Bull do Brasil',fat:11.4,cmv:8.7,mg:23.68},
+    {n:'VCT Brasil',fat:4.08,cmv:3.65,mg:10.54},
+    {n:'PepsiCo do Brasil',fat:2.18,cmv:1.75,mg:19.72},
+    {n:'Ferrero do Brasil',fat:1.96,cmv:1.8,mg:8.16},
+    {n:'Nissin Foods',fat:1.2,cmv:0.98,mg:18.33},
+    {n:'Masterfoods Brasil',fat:1.13,cmv:0.95,mg:15.93},
+    {n:'Heinz Brasil',fat:0.84,cmv:0.71,mg:15.48},
+    {n:'Boehringer Animal Health',fat:0.8,cmv:0.53,mg:33.75},
+    {n:'J Macedo S/A',fat:0.75,cmv:0.67,mg:10.67},
+    {n:'Arcor do Brasil',fat:0.66,cmv:0.55,mg:16.67},
+  ],
+  '01/2026': [
+    {n:'Mondelez Brasil',fat:27.0,cmv:24.0,mg:11.11},
+    {n:'Pernod Ricard Brasil',fat:22.19,cmv:21.46,mg:3.29},
+    {n:'Red Bull do Brasil',fat:11.99,cmv:9.25,mg:22.85},
+    {n:'VCT Brasil',fat:3.54,cmv:3.21,mg:9.32},
+    {n:'PepsiCo do Brasil',fat:3.22,cmv:2.69,mg:16.46},
+    {n:'Pandurata Alimentos',fat:1.83,cmv:1.58,mg:13.66},
+    {n:'Masterfoods Brasil',fat:1.46,cmv:1.26,mg:13.7},
+    {n:'Reckitt Benckiser',fat:1.42,cmv:1.26,mg:11.27},
+    {n:'Nissin Foods',fat:1.36,cmv:1.09,mg:19.85},
+    {n:'Ferrero do Brasil',fat:1.32,cmv:1.19,mg:9.85},
+    {n:'Heinz Brasil',fat:1.27,cmv:1.18,mg:7.09},
+    {n:'Arcor do Brasil',fat:1.26,cmv:1.19,mg:5.56},
+  ],
+  '02/2026': [
+    {n:'Mondelez Brasil',fat:28.25,cmv:25.46,mg:9.87},
+    {n:'Pernod Ricard Brasil',fat:20.34,cmv:20.36,mg:-0.09},
+    {n:'Red Bull do Brasil',fat:15.12,cmv:11.85,mg:21.64},
+    {n:'VCT Brasil',fat:5.03,cmv:4.76,mg:5.42},
+    {n:'PepsiCo do Brasil',fat:2.49,cmv:2.11,mg:15.3},
+    {n:'Bauducco',fat:1.78,cmv:1.56,mg:12.31},
+    {n:'Masterfoods Brasil',fat:1.68,cmv:1.48,mg:11.68},
+    {n:'Brown-Forman Beverages',fat:1.56,cmv:1.48,mg:5.26},
+    {n:'Nissin Foods',fat:1.31,cmv:1.02,mg:22.38},
+    {n:'Ferrero do Brasil',fat:1.25,cmv:1.13,mg:9.62},
+    {n:'J Macedo S/A',fat:0.9,cmv:0.84,mg:6.52},
+    {n:'Arcor do Brasil',fat:0.59,cmv:0.48,mg:18.4},
+  ],
+  '03/2026': [
+    {n:'Mondelez Brasil',fat:18.66,cmv:16.94,mg:9.18},
+    {n:'Pernod Ricard Brasil',fat:7.04,cmv:7.22,mg:-2.62},
+    {n:'Red Bull do Brasil',fat:6.14,cmv:6.42,mg:-4.54},
+    {n:'VCT Brasil',fat:3.67,cmv:3.5,mg:4.65},
+    {n:'PepsiCo do Brasil',fat:1.93,cmv:1.6,mg:17.05},
+    {n:'Bauducco',fat:1.88,cmv:1.61,mg:14.78},
+    {n:'Masterfoods Brasil',fat:1.62,cmv:1.48,mg:8.24},
+    {n:'Ferrero do Brasil',fat:1.57,cmv:1.48,mg:5.44},
+    {n:'Arcor do Brasil',fat:1.29,cmv:1.14,mg:11.35},
+    {n:'Nissin Foods',fat:0.99,cmv:0.81,mg:18.16},
+    {n:'J Macedo S/A',fat:0.67,cmv:0.6,mg:10.28},
+    {n:'Boehringer Animal Health',fat:0.58,cmv:0.35,mg:40.44},
+  ],
+};
+
+const mesLabels = {'all':'Todos os meses','12/2025':'Dezembro/2025','01/2026':'Janeiro/2026','02/2026':'Fevereiro/2026','03/2026':'Março/2026 (até 24/03)'};
+const mesColors = ['#4f6ef7','#34d399','#f97316','#a78bfa','#06b6d4'];
+
+/* Diretorias */
+const DIR_LABELS = ['Atacado Esp.','Distribuição','Mondelez','Master','Bahia Fort','CMA','Suporte'];
+const DIR_FULL   = ['ATACADO ESPECIALIZADO','DISTRIBUIÇÃO','MONDELEZ','MASTER','BAHIA FORT','CMA','SUPORTE'];
+const DIR_COLORS = ['#4f6ef7','#34d399','#f97316','#a78bfa','#06b6d4','#fbbf24','#94a3b8'];
+const diretorias = {
+  'all':{fat:[129.19,85.58,50.19,22.47,5.4,3.79,0.43],cmv:[129.49,68.39,40.62,19.39,3.81,3.24,0.4],margRS:[-0.3,17.19,9.57,3.08,1.6,0.55,0.04],marg:[-0.23,20.09,19.07,13.73,29.54,14.57,8.12]},
+  '12/2025':{fat:[34.69,23.83,10.61,6.51,1.46,0.21,0.04],cmv:[34.23,17.9,8.67,5.66,1.03,0.19,0.04],margRS:[0.46,5.93,1.94,0.85,0.43,0.03,-0.0],marg:[1.32,24.88,18.31,13.06,29.42,12.51,-6.82]},
+  '01/2026':{fat:[34.91,22.81,14.15,6.25,1.73,1.25,0.27],cmv:[34.3,18.25,11.33,5.41,1.24,1.08,0.24],margRS:[0.61,4.56,2.82,0.84,0.49,0.17,0.02],marg:[1.75,19.98,19.94,13.45,28.26,13.86,8.44]},
+  '02/2026':{fat:[41.33,23.5,14.88,5.19,1.09,1.11,0.13],cmv:[41.12,19.16,11.91,4.28,0.78,0.93,0.11],margRS:[0.21,4.34,2.97,0.92,0.32,0.18,0.02],marg:[0.51,18.48,19.94,17.68,29.02,15.86,11.81]},
+  '03/2026':{fat:[18.25,15.44,10.55,4.51,1.11,1.22,0.0],cmv:[19.84,13.08,8.72,4.04,0.75,1.04,0.0],margRS:[-1.58,2.36,1.84,0.47,0.36,0.18,0.0],marg:[-8.66,15.31,17.42,10.52,32.21,14.48,25.0]},
+};
+
+/* ══════════════════════════ CHART HELPERS ══════════════════════════ */
+const GC='rgba(255,255,255,0.06)', TC='#94a3b8';
+const BF={family:"'Segoe UI',system-ui,sans-serif",size:10};
+Chart.defaults.color=TC; Chart.defaults.font=BF;
+
+let trendChart, deptoChart, filialChart, dirChart, dirEvolChart, fornecChart;
+const FORNEC_COLORS=['#f43f5e','#fb923c','#fbbf24','#a3e635','#34d399','#22d3ee','#60a5fa','#a78bfa','#f472b6','#4ade80','#38bdf8','#e879f9'];
+
+/* ── Trend chart (always shows all months, highlights selected) ── */
+function buildTrend(selIdx){
+  const alphaB = i => (selIdx===-1||i===selIdx) ? 'rgba(79,110,247,0.50)' : 'rgba(79,110,247,0.12)';
+  const alphaL = i => (selIdx===-1||i===selIdx) ? 'rgba(52,211,153,0.40)' : 'rgba(52,211,153,0.10)';
+  const alphaBo = i => (selIdx===-1||i===selIdx) ? '#4f6ef7' : 'rgba(79,110,247,0.25)';
+  const alphaLo = i => (selIdx===-1||i===selIdx) ? '#34d399' : 'rgba(52,211,153,0.2)';
+  const alphaP  = i => (selIdx===-1||i===selIdx) ? 5 : 2;
+  const lineA   = (selIdx===-1) ? 1 : 0.3;
+
+  if(trendChart) trendChart.destroy();
+  trendChart = new Chart(document.getElementById('trendChart'),{
+    data:{
+      labels:MESES,
+      datasets:[
+        {type:'bar',label:'Fat. Bruto (R$M)',data:FAT_B,
+         backgroundColor:FAT_B.map((_,i)=>alphaB(i)),
+         borderColor:FAT_B.map((_,i)=>alphaBo(i)),borderWidth:1.5,borderRadius:4,yAxisID:'y'},
+        {type:'bar',label:'Fat. Líquido (R$M)',data:FAT_L,
+         backgroundColor:FAT_L.map((_,i)=>alphaL(i)),
+         borderColor:FAT_L.map((_,i)=>alphaLo(i)),borderWidth:1.5,borderRadius:4,yAxisID:'y'},
+        {type:'line',label:'Margem %',data:MARG_P,
+         borderColor:'#f97316',backgroundColor:'rgba(249,115,22,0.10)',
+         borderWidth:2.5,pointRadius:MARG_P.map((_,i)=>alphaP(i)),
+         pointBackgroundColor:MARG_P.map((_,i)=>(selIdx===-1||i===selIdx)?'#f97316':'rgba(249,115,22,0.3)'),
+         tension:0.35,fill:true,yAxisID:'y2'}
+      ]
+    },
+    options:{
+      responsive:true,interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:10,padding:14}},
+        tooltip:{callbacks:{label:ctx=>{
+          if(ctx.dataset.yAxisID==='y2') return ' Margem: '+ctx.parsed.y.toFixed(2)+'%';
+          return ' '+ctx.dataset.label+': R$ '+ctx.parsed.y.toFixed(1)+'M';
+        }}}
+      },
+      scales:{
+        x:{grid:{color:GC},ticks:{font:BF}},
+        y:{position:'left',grid:{color:GC},ticks:{callback:v=>'R$'+v+'M',font:BF}},
+        y2:{position:'right',grid:{drawOnChartArea:false},ticks:{callback:v=>v+'%',font:BF},min:0}
+      }
+    }
+  });
+}
+
+/* ── Depto chart ── */
+const DEPTO_COLORS=['#4f6ef7','#818cf8','#7c3aed','#a78bfa','#34d399','#059669','#06b6d4','#0891b2','#f97316','#fbbf24'];
+function buildDepto(mk){
+  const d=deptos[mk];
+  if(deptoChart) deptoChart.destroy();
+  deptoChart = new Chart(document.getElementById('deptoChart'),{
+    data:{
+      labels:d.labels,
+      datasets:[
+        {type:'bar',label:'Fat. Bruto (R$M)',data:d.fat,backgroundColor:DEPTO_COLORS,borderRadius:4,yAxisID:'y'},
+        {type:'line',label:'Margem %',data:d.marg,borderColor:'#f97316',backgroundColor:'transparent',
+         borderWidth:2,pointRadius:3,pointBackgroundColor:'#f97316',tension:0.3,yAxisID:'y2'}
+      ]
+    },
+    options:{
+      responsive:true,indexAxis:'y',interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:9,padding:10,font:{size:10}}},
+        tooltip:{callbacks:{label:ctx=>{
+          if(ctx.dataset.yAxisID==='y2') return ' Margem: '+ctx.parsed.x.toFixed(2)+'%';
+          return ' Fat.: R$ '+ctx.parsed.x.toFixed(2)+'M';
+        }}}
+      },
+      scales:{
+        x:{grid:{color:GC},ticks:{callback:v=>'R$'+v+'M',font:{size:9}}},
+        y:{grid:{color:GC},ticks:{font:{size:9}}},
+        y2:{position:'top',grid:{drawOnChartArea:false},ticks:{callback:v=>v+'%',font:{size:9}}}
+      }
+    }
+  });
+}
+
+/* ── Filial chart ── */
+function buildFilial(mk){
+  const f=filiais[mk];
+  if(filialChart) filialChart.destroy();
+  filialChart = new Chart(document.getElementById('filialChart'),{
+    data:{
+      labels:f.labels,
+      datasets:[
+        {type:'bar',label:'Fat. Bruto (R$M)',data:f.fat,
+         backgroundColor:['#4f6ef7','#34d399','#f97316','#a78bfa'],borderRadius:6,yAxisID:'y'},
+        {type:'line',label:'Margem %',data:f.marg,borderColor:'#fbbf24',backgroundColor:'transparent',
+         borderWidth:2.5,pointRadius:5,pointBackgroundColor:'#fbbf24',tension:0,yAxisID:'y2'}
+      ]
+    },
+    options:{
+      responsive:true,interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:9,padding:10,font:{size:10}}},
+        tooltip:{callbacks:{label:ctx=>{
+          if(ctx.dataset.yAxisID==='y2') return ' Margem: '+ctx.parsed.y.toFixed(2)+'%';
+          return ' Fat.: R$ '+ctx.parsed.y.toFixed(2)+'M';
+        }}}
+      },
+      scales:{
+        x:{grid:{color:GC},ticks:{font:{size:9}}},
+        y:{grid:{color:GC},ticks:{callback:v=>'R$'+v+'M',font:{size:9}}},
+        y2:{position:'right',grid:{drawOnChartArea:false},ticks:{callback:v=>v+'%',font:{size:9}},min:0}
+      }
+    }
+  });
+}
+
+/* ── Diretoria bar chart ── */
+function buildDirChart(mk){
+  const d=diretorias[mk];
+  if(dirChart) dirChart.destroy();
+  dirChart = new Chart(document.getElementById('dirChart'),{
+    data:{
+      labels:DIR_LABELS,
+      datasets:[
+        {type:'bar',label:'Fat. Bruto (R$M)',data:d.fat,backgroundColor:DIR_COLORS,borderRadius:4,yAxisID:'y'},
+        {type:'line',label:'Margem %',data:d.marg,borderColor:'#f43f5e',backgroundColor:'transparent',
+         borderWidth:2,pointRadius:3,pointBackgroundColor:'#f43f5e',tension:0.3,yAxisID:'y2'}
+      ]
+    },
+    options:{
+      responsive:true,indexAxis:'y',interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:9,padding:10,font:{size:10}}},
+        tooltip:{callbacks:{label:ctx=>{
+          if(ctx.dataset.yAxisID==='y2') return ' Margem: '+ctx.parsed.x.toFixed(2)+'%';
+          return ' Fat.: R$ '+ctx.parsed.x.toFixed(2)+'M';
+        }}}
+      },
+      scales:{
+        x:{grid:{color:GC},ticks:{callback:v=>'R$'+v+'M',font:{size:9}}},
+        y:{grid:{color:GC},ticks:{font:{size:9}}},
+        y2:{position:'top',grid:{drawOnChartArea:false},ticks:{callback:v=>v+'%',font:{size:9}}}
+      }
+    }
+  });
+}
+
+/* ── Diretoria evolution chart (multi-line, always all months) ── */
+function buildDirEvolChart(){
+  if(dirEvolChart) dirEvolChart.destroy();
+  const ks=['12/2025','01/2026','02/2026','03/2026'];
+  dirEvolChart = new Chart(document.getElementById('dirEvolChart'),{
+    data:{
+      labels:['Dez/2025','Jan/2026','Fev/2026','Mar/2026*'],
+      datasets:DIR_LABELS.map((lbl,i)=>({
+        type:'line',label:lbl,
+        data:ks.map(k=>diretorias[k].fat[i]),
+        borderColor:DIR_COLORS[i],backgroundColor:'transparent',
+        borderWidth:2,pointRadius:3,pointBackgroundColor:DIR_COLORS[i],tension:0.3
+      }))
+    },
+    options:{
+      responsive:true,interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:9,padding:6,font:{size:9}}},
+        tooltip:{callbacks:{label:ctx=>' '+ctx.dataset.label+': R$ '+ctx.parsed.y.toFixed(2)+'M'}}
+      },
+      scales:{
+        x:{grid:{color:GC},ticks:{font:BF}},
+        y:{grid:{color:GC},ticks:{callback:v=>'R$'+v+'M',font:BF},min:0}
+      }
+    }
+  });
+}
+
+/* ── Diretoria table ── */
+function buildDirTable(mk){
+  const d=diretorias[mk];
+  const maxF=Math.max(...d.fat);
+  const fmtM=v=>'R$ '+v.toFixed(2).replace('.',',')+'M';
+  document.getElementById('dirTable').innerHTML=`
+  <thead><tr><th>Diretoria</th>
+    <th style="text-align:right">Fat. Bruto</th>
+    <th style="text-align:right">CMV</th>
+    <th style="text-align:right">Margem R$</th>
+    <th style="text-align:right">Margem %</th>
+    <th style="min-width:80px">Participação</th></tr></thead>
+  <tbody>${DIR_LABELS.map((lbl,i)=>`<tr>
+    <td><span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${DIR_COLORS[i]};margin-right:6px"></span><span class="name-cell" style="display:inline">${lbl}</span></td>
+    <td class="money">${fmtM(d.fat[i])}</td>
+    <td class="money">${fmtM(d.cmv[i])}</td>
+    <td class="money ${d.margRS[i]>=0?'':'neg'}">${d.margRS[i]>=0?'':'-'}${fmtM(Math.abs(d.margRS[i]))}</td>
+    <td class="pct ${d.marg[i]>=0?'pos':'neg'}">${d.marg[i]>=0?'+':''}${d.marg[i].toFixed(2).replace('.',',')}%</td>
+    <td><div class="bar-bg"><div class="bar-fill" style="width:${maxF>0?(d.fat[i]/maxF*100).toFixed(1):0}%;background:${DIR_COLORS[i]}"></div></div>
+        <span style="font-size:9px;color:var(--muted)">${maxF>0?(d.fat[i]/maxF*100).toFixed(1):0}%</span></td>
+  </tr>`).join('')}</tbody>`;
+}
+
+/* ── Tables ── */
+function buildVendTable(mk){
+  const rows=vendedores[mk];
+  const maxF=Math.max(...rows.map(r=>r.fat));
+  document.getElementById('vendTable').innerHTML=`
+  <thead><tr><th>#</th><th>Vendedor</th><th>Tipo</th>
+    <th style="text-align:right">Fat. Bruto</th>
+    <th style="text-align:right">Margem %</th>
+    <th style="text-align:right">Clientes</th>
+    <th style="min-width:70px">Participação</th></tr></thead>
+  <tbody>${rows.map((v,i)=>`<tr>
+    <td class="rank">${i+1}</td>
+    <td class="name-cell">${v.n}</td>
+    <td><span style="background:rgba(79,110,247,.15);color:#818cf8;padding:2px 6px;border-radius:10px;font-size:10px">${tipoL[v.t]||v.t}</span></td>
+    <td class="money">R$ ${v.fat.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.')}M</td>
+    <td class="pct ${v.m>=0?'pos':'neg'}">${v.m>=0?'+':''}${v.m.toFixed(2).replace('.',',')}%</td>
+    <td style="text-align:right">${v.cli}</td>
+    <td><div class="bar-bg"><div class="bar-fill" style="width:${(v.fat/maxF*100).toFixed(1)}%"></div></div>
+        <span style="font-size:9px;color:var(--muted)">${(v.fat/maxF*100).toFixed(1)}%</span></td>
+  </tr>`).join('')}</tbody>`;
+}
+
+function buildCliTable(mk){
+  const rows=clientes[mk];
+  const maxF=Math.max(...rows.map(r=>r.fat));
+  document.getElementById('cliTable').innerHTML=`
+  <thead><tr><th>#</th><th>Cliente</th>
+    <th style="text-align:right">Fat. Bruto</th>
+    <th style="text-align:right">Margem %</th>
+    <th style="min-width:70px">Participação</th></tr></thead>
+  <tbody>${rows.map((c,i)=>`<tr>
+    <td class="rank">${i+1}</td>
+    <td class="name-cell">${c.n}</td>
+    <td class="money">R$ ${c.fat.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.')}M</td>
+    <td class="pct ${c.m>=0?'pos':'neg'}">${c.m>=0?'+':''}${c.m.toFixed(2).replace('.',',')}%</td>
+    <td><div class="bar-bg"><div class="bar-fill" style="width:${(c.fat/maxF*100).toFixed(1)}%;background:#06b6d4"></div></div>
+        <span style="font-size:9px;color:var(--muted)">${(c.fat/maxF*100).toFixed(1)}%</span></td>
+  </tr>`).join('')}</tbody>`;
+}
+
+/* ── Fornecedores chart ── */
+function buildFornecChart(mk){
+  const rows=fornecedores[mk];
+  if(fornecChart) fornecChart.destroy();
+  fornecChart = new Chart(document.getElementById('fornecChart'),{
+    data:{
+      labels:rows.map(r=>r.n),
+      datasets:[
+        {type:'bar',label:'Fat. Bruto (R$M)',data:rows.map(r=>r.fat),
+         backgroundColor:FORNEC_COLORS.slice(0,rows.length),borderRadius:4,yAxisID:'y'},
+        {type:'line',label:'Mg. Bruta %',data:rows.map(r=>r.mg),
+         borderColor:'#fbbf24',backgroundColor:'transparent',
+         borderWidth:2,pointRadius:3,pointBackgroundColor:'#fbbf24',tension:0.3,yAxisID:'y2'}
+      ]
+    },
+    options:{
+      responsive:true,indexAxis:'y',interaction:{mode:'index',intersect:false},
+      plugins:{
+        legend:{position:'top',labels:{boxWidth:9,padding:10,font:{size:10}}},
+        tooltip:{callbacks:{label:ctx=>{
+          if(ctx.dataset.yAxisID==='y2') return ' Mg.Bruta: '+ctx.parsed.x.toFixed(1)+'%';
+          return ' Fat.: R$ '+ctx.parsed.x.toFixed(2)+'M';
+        }}}
+      },
+      scales:{
+        x:{grid:{color:GC},ticks:{callback:v=>'R$'+v+'M',font:{size:9}}},
+        y:{grid:{color:GC},ticks:{font:{size:9}}},
+        y2:{position:'top',grid:{drawOnChartArea:false},ticks:{callback:v=>v+'%',font:{size:9}}}
+      }
+    }
+  });
+}
+
+function buildFornecTable(mk){
+  const rows=fornecedores[mk];
+  const maxF=Math.max(...rows.map(r=>r.fat));
+  const totalFat=rows.reduce((a,r)=>a+r.fat,0);
+  const fmtM=v=>'R$ '+v.toFixed(2).replace('.',',')+'M';
+  document.getElementById('fornecTable').innerHTML=`
+  <thead><tr><th>#</th><th>Fornecedor</th>
+    <th style="text-align:right">Fat. Bruto</th>
+    <th style="text-align:right">CMV</th>
+    <th style="text-align:right">Mg. Bruta %</th>
+    <th style="min-width:70px">Part. top-12</th></tr></thead>
+  <tbody>${rows.map((r,i)=>`<tr>
+    <td class="rank">${i+1}</td>
+    <td class="name-cell">${r.n}</td>
+    <td class="money">${fmtM(r.fat)}</td>
+    <td class="money">${fmtM(r.cmv)}</td>
+    <td class="pct ${r.mg>=0?'pos':'neg'}">${r.mg>=0?'+':''}${r.mg.toFixed(1).replace('.',',')}%</td>
+    <td><div class="bar-bg"><div class="bar-fill" style="width:${(r.fat/maxF*100).toFixed(1)}%;background:#f43f5e"></div></div>
+        <span style="font-size:9px;color:var(--muted)">${(r.fat/totalFat*100).toFixed(1)}%</span></td>
+  </tr>`).join('')}</tbody>`;
+}
+
+/* ── KPIs ── */
+function updateKPIs(mk){
+  const d=kpi[mk];
+  const fmtM = v=>'R$ '+v.toFixed(2).replace('.',',').replace(/\B(?=(\d{3})+(?!\d))/g,'.')+'M';
+  document.getElementById('k-fat-bruto').textContent = fmtM(d.fatBruto);
+  document.getElementById('k-fat-liq').textContent   = fmtM(d.fatLiq);
+  document.getElementById('k-dev').textContent       = fmtM(d.dev);
+  document.getElementById('k-ded').textContent       = fmtM(d.ded);
+  document.getElementById('k-cmv').textContent       = fmtM(d.cmv);
+  document.getElementById('k-marg-rs').textContent   = fmtM(d.margemRS);
+  document.getElementById('k-marg-pct').textContent  = d.margemPct.toFixed(2).replace('.',',')+' %';
+  const pctDev    = (d.dev/d.fatBruto*100).toFixed(2).replace('.',',');
+  const pctDed    = (d.ded/d.fatBruto*100).toFixed(2).replace('.',',');
+  const pctCmvSB  = (d.cmvSB/d.cmv*100).toFixed(1).replace('.',',');
+  const pctCmvDev = (d.cmvDev/d.cmv*100).toFixed(1).replace('.',',');
+  document.getElementById('k-fat-bruto-sub').textContent = mk==='all' ? '4 meses consolidados' : mesLabels[mk];
+  document.getElementById('k-fat-liq-sub').textContent   = 'VLLIQUIDO Rotina 111 · fatBruto − dev(PCNFENT)';
+  document.getElementById('k-dev-sub').textContent       = pctDev+'% do fat. bruto · via PCNFENT/PCESTCOM';
+  document.getElementById('k-ded-sub').textContent       = 'Rotina 111 não deduz impostos do fat. líquido';
+  document.getElementById('k-cmv').title                 = 'CMV S+SB (P_BONIFICACAO=1). Bonif.: '+fmtM(d.cmvSB)+' · CMV devol. recup.: '+fmtM(d.cmvDev);
+  document.getElementById('k-cmv-sub').textContent       = 'incl. bonif. '+fmtM(d.cmvSB)+' ('+pctCmvSB+'% do CMV)';
+  document.getElementById('k-marg-rs-sub').textContent   = 'fat.líq − CMV(S+SB) + CMV devol. ('+fmtM(d.cmvDev)+' recup.)';
+  document.getElementById('k-marg-pct-sub').textContent  = 'R111 P_BONIFICACAO=1 · CMV recup. '+pctCmvDev+'% do CMV';
+}
+
+/* ── Filter ── */
+let currentFilter = 'all';
+function setFilter(mk, idx){
+  currentFilter = mk;
+  // buttons
+  document.querySelectorAll('.filter-btn').forEach(b=>{
+    b.classList.remove('active');
+    if(b.dataset.m===mk) b.classList.add('active');
+  });
+  // badge
+  document.getElementById('periodBadge').textContent = '📅 '+mesLabels[mk];
+  // subtitles
+  const lbl = mk==='all' ? 'todos os meses' : mesLabels[mk];
+  document.getElementById('sub-depto').textContent       = 'Top 10 departamentos · '+lbl;
+  document.getElementById('sub-filial').textContent      = 'Fat. bruto e % margem · '+lbl;
+  document.getElementById('sub-vend').textContent        = 'Top 10 por faturamento bruto · '+lbl;
+  document.getElementById('sub-cli').textContent         = 'Por faturamento bruto · '+lbl;
+  document.getElementById('sub-dir').textContent         = 'Fat. bruto e % margem por diretoria · '+lbl;
+  document.getElementById('sub-dir-tbl').textContent     = 'Faturamento, CMV e Margem por Diretoria · '+lbl;
+  document.getElementById('sub-fornec-chart').textContent= 'Top 12 fornecedores · '+lbl+' · PCMOV→PCPRODUT→PCFORNEC';
+  // trend (highlight)
+  const selIdx = mk==='all' ? -1 : ['12/2025','01/2026','02/2026','03/2026'].indexOf(mk);
+  buildTrend(selIdx);
+  buildDepto(mk);
+  buildFilial(mk);
+  buildDirChart(mk);
+  buildDirTable(mk);
+  buildVendTable(mk);
+  buildCliTable(mk);
+  buildFornecChart(mk);
+  buildFornecTable(mk);
+  updateKPIs(mk);
+}
+
+/* ── INIT ── */
+setFilter('all', 0);
+buildDirEvolChart();
+</script>
+</body>
+</html>
